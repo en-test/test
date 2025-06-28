@@ -204,7 +204,6 @@ function toPage4() {
     ticket: state.ticket,
     goods: state.selectedGoods.map(g => ({ id: g.id, qty: g.qty }))
   };
-  console.log("toPage4() called, payload:", JSON.stringify(payload));
   new QRCode(qrDiv, {
     text: JSON.stringify(payload),
     width: 256,
