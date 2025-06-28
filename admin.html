@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>物販管理（運営用）</title>
+  <meta charset="UTF-8" />
+  <title>物販管理 - 運営用</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: sans-serif; padding: 1rem; }
+    body { font-family: sans-serif; padding: 1em; }
     #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
     .section { margin: 1.5em 0; }
     .entry { border: 1px solid #ccc; padding: 0.5em; margin-bottom: 0.5em; }
-    table { border-collapse: collapse; width: 100%; margin-top: 0.5em; }
-    th, td { border: 1px solid #ccc; padding: 0.5em; text-align: center; }
-    th { background: #f5f5f5; }
+    details { margin-top: 0.5em; }
   </style>
 </head>
 <body>
@@ -27,7 +25,7 @@
 
   <div class="section">
     <h2>② 読み取り結果</h2>
-    <div id="scan-result" style="border:1px solid #ccc; padding:1em; min-height:120px;">未読み取り</div>
+    <pre id="scan-result">未読み取り</pre>
     <button onclick="saveData()">保存する</button>
   </div>
 
@@ -42,142 +40,202 @@
     <button onclick="exportCSV()">CSVをダウンロード</button>
   </div>
 
-  <script>
-    const GOODS_MASTER = [
-      { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
-      { id: 2, name: "タオル", price: 1500, bonus: 1 },
-      { id: 3, name: "缶バッジ", price: 500, bonus: 0 },
-      { id: 4, name: "ステッカー", price: 300, bonus: 0 },
-      { id: 5, name: "ペンライト", price: 2000, bonus: 1 },
-      { id: 6, name: "リストバンド", price: 800, bonus: 0 },
-      { id: 7, name: "ポスター", price: 1000, bonus: 0 },
-      { id: 8, name: "アクリルスタンド", price: 1800, bonus: 1 },
-      { id: 9, name: "キーホルダー", price: 1200, bonus: 0 },
-      { id: 10, name: "クリアファイル", price: 400, bonus: 0 },
-      { id: 11, name: "マグカップ", price: 1500, bonus: 0 },
-      { id: 12, name: "スマホリング", price: 1000, bonus: 0 },
-      { id: 13, name: "ネックストラップ", price: 700, bonus: 0 },
-      { id: 14, name: "メモ帳", price: 500, bonus: 0 },
-      { id: 15, name: "ピンバッジ", price: 600, bonus: 0 },
-      { id: 16, name: "マフラータオル", price: 1800, bonus: 1 },
-      { id: 17, name: "ショッピングバッグ", price: 1000, bonus: 0 },
-      { id: 18, name: "うちわ", price: 400, bonus: 0 },
-      { id: 19, name: "ラバーバンド", price: 500, bonus: 0 },
-      { id: 20, name: "カレンダー", price: 1200, bonus: 0 },
-      { id: 21, name: "ボールペン", price: 300, bonus: 0 },
-      { id: 22, name: "パーカー", price: 4500, bonus: 1 },
-      { id: 23, name: "ブロマイド", price: 200, bonus: 0 },
-      { id: 24, name: "巾着", price: 900, bonus: 0 },
-      { id: 25, name: "DVD", price: 3500, bonus: 1 },
-      { id: 26, name: "トートバッグ", price: 2000, bonus: 1 },
-      { id: 27, name: "イヤホン", price: 2500, bonus: 1 },
-      { id: 28, name: "メガネ拭き", price: 600, bonus: 0 },
-      { id: 29, name: "ノート", price: 400, bonus: 0 },
-      { id: 30, name: "お守り", price: 800, bonus: 0 }
-    ];
+<script>
+  // QRコードから読み取るデータ構造例
+  // {
+  //   "ticket": "A0001",
+  //   "goods": [
+  //     { "id": 1, "qty": 3 },
+  //     { "id": 2, "qty": 1 }
+  //   ],
+  //   "totalPrice": 10500,
+  //   "totalBonus": 4
+  // }
 
-    let lastScanned = null;
-    const STORAGE_KEY = "purchases";
-    let qrScanner = null;
+  // 商品マスタ（運営側でも管理したい場合はここに記述）
+  const GOODS_MASTER = [
+    { id: 1,  name: "Tシャツ", price:3000, bonus:1 },
+    { id: 2,  name: "タオル", price:1500, bonus:1 },
+    { id: 3,  name: "缶バッジ", price:500,  bonus:0 },
+    { id: 4,  name: "アクリルキーホルダー", price:800,  bonus:0 },
+    { id: 5,  name: "クリアファイル", price:400,  bonus:0 },
+    { id: 6,  name: "ポスター", price:700,  bonus:0 },
+    { id: 7,  name: "パンフレット", price:1200, bonus:1 },
+    { id: 8,  name: "ステッカー", price:300,  bonus:0 },
+    { id: 9,  name: "スマホスタンド", price:1300, bonus:1 },
+    { id:10, name: "マグカップ", price:1100, bonus:0 },
+    { id:11, name: "ペンライト", price:2500, bonus:1 },
+    { id:12, name: "ネックストラップ", price:600,  bonus:0 },
+    { id:13, name: "ピンズ", price:500,  bonus:0 },
+    { id:14, name: "キャップ", price:1800, bonus:1 },
+    { id:15, name: "リストバンド", price:450,  bonus:0 },
+    { id:16, name: "キーチェーン", price:750,  bonus:0 },
+    { id:17, name: "パーカー", price:4800, bonus:2 },
+    { id:18, name: "ロングTシャツ", price:3500, bonus:1 },
+    { id:19, name: "タペストリー", price:1600, bonus:1 },
+    { id:20, name: "メモ帳", price:350,  bonus:0 },
+    { id:21, name: "缶ケース", price:900,  bonus:0 },
+    { id:22, name: "ショルダーバッグ", price:2800, bonus:1 },
+    { id:23, name: "ノート", price:500,  bonus:0 },
+    { id:24, name: "消しゴム", price:200,  bonus:0 },
+    { id:25, name: "ペンセット", price:1000, bonus:1 },
+    { id:26, name: "うちわ", price:300,  bonus:0 },
+    { id:27, name: "ハンカチ", price:700,  bonus:0 },
+    { id:28, name: "タンブラー", price:2200, bonus:1 },
+    { id:29, name: "ラバーストラップ", price:600,  bonus:0 },
+    { id:30, name: "ステーショナリーセット", price:1500, bonus:1 }
+  ];
 
-    function startScan() {
-      if (qrScanner) return;
-      qrScanner = new Html5Qrcode("reader");
-      qrScanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decoded) => {
-          try {
-            const data = JSON.parse(decoded);
-            lastScanned = data;
-            document.getElementById("scan-result").innerHTML = renderScanResult(data);
-            stopScan();
-          } catch {
-            document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではない）";
-            lastScanned = null;
+  const STORAGE_KEY = "purchases";
+  let lastScannedData = null;
+  let qrScanner = null;
+
+  function startScan() {
+    if (qrScanner) return; // すでにスキャン中は無視
+    qrScanner = new Html5Qrcode("reader");
+    qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        try {
+          const data = JSON.parse(decodedText);
+
+          // goods配列の商品の詳細を商品マスタから補完（名前・価格・カード枚数）
+          if (Array.isArray(data.goods)) {
+            data.items = data.goods.map(item => {
+              const master = GOODS_MASTER.find(g => g.id === item.id);
+              return {
+                id: item.id,
+                qty: item.qty,
+                name: master ? master.name : "不明な商品",
+                price: master ? master.price : 0,
+                bonus: master ? master.bonus : 0
+              };
+            });
+          } else {
+            data.items = [];
           }
+
+          lastScannedData = data;
+
+          // 表示用に整形して表示
+          document.getElementById("scan-result").textContent = formatReadable(data);
+
+          stopScan(); // 読み取ったら自動で停止
+        } catch (e) {
+          document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではない）";
         }
-      ).catch(err => alert("カメラ起動失敗: " + err));
-    }
-
-    function stopScan() {
-      if (qrScanner) {
-        qrScanner.stop().then(() => {
-          qrScanner.clear();
-          qrScanner = null;
-        });
+      },
+      (errorMessage) => {
+        // 読み取り中のエラーは無視してよい
       }
-    }
+    ).catch(err => {
+      alert("カメラの起動に失敗しました：" + err);
+    });
+  }
 
-    function renderScanResult(data) {
-      let html = `<p><strong>整理番号:</strong> ${data.serial}</p>`;
-      html += `<p><strong>チケット番号:</strong> ${data.ticket}</p>`;
-      html += `<p><strong>合計点数:</strong> ${data.totalQty} / <strong>合計金額:</strong> ￥${data.totalPrice} / <strong>応援カード:</strong> ${data.totalBonus}</p>`;
-
-      if (!data.goods?.length) return html + `<p>商品データがありません。</p>`;
-
-      html += `<table><thead><tr><th>商品名</th><th>数量</th></tr></thead><tbody>`;
-      data.goods.forEach(item => {
-        const m = GOODS_MASTER.find(g => g.id === item.id) || { name: `ID:${item.id}` };
-        html += `<tr><td>${m.name}</td><td>${item.qty}</td></tr>`;
+  function stopScan() {
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        qrScanner.clear();
+        qrScanner = null;
       });
-      html += `</tbody></table>`;
-      return html;
+    }
+  }
+
+  function saveData() {
+    if (!lastScannedData) {
+      alert("保存するデータがありません。QRを読み取ってください。");
+      return;
+    }
+    let purchases = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    // 同じチケット番号の重複登録防止
+    if (purchases.some(e => e.ticket === lastScannedData.ticket)) {
+      alert("このチケット番号は既に保存済みです。");
+      return;
+    }
+    // 合計金額とカード枚数を計算して保存データに追加
+    const totalPrice = lastScannedData.items.reduce((acc, cur) => acc + cur.price * cur.qty, 0);
+    const totalBonus = lastScannedData.items.reduce((acc, cur) => acc + cur.bonus * cur.qty, 0);
+
+    const saveObj = {
+      ticket: lastScannedData.ticket,
+      items: lastScannedData.items,
+      totalPrice: totalPrice,
+      totalBonus: totalBonus
+    };
+
+    purchases.push(saveObj);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(purchases));
+    alert("保存しました。");
+  }
+
+  function showData() {
+    const purchases = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const container = document.getElementById("data-list");
+    if (purchases.length === 0) {
+      container.innerHTML = "<p>保存データはありません。</p>";
+      return;
     }
 
-    function saveData() {
-      if (!lastScanned) return alert("QRコードを読み取ってください");
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (existing.some(e => e.serial === lastScanned.serial)) {
-        return alert("この整理番号は既に保存済みです。");
-      }
+    container.innerHTML = purchases.map(p => `
+      <div class="entry">
+        <strong>チケット番号: ${p.ticket}</strong><br>
+        合計金額: ￥${p.totalPrice.toLocaleString()}<br>
+        応援カード枚数: ${p.totalBonus}<br>
+        <details>
+          <summary>購入商品詳細</summary>
+          <pre>${JSON.stringify(p.items, null, 2)}</pre>
+        </details>
+      </div>
+    `).join("");
+  }
 
-      const record = {
-        serial: lastScanned.serial,
-        ticket: lastScanned.ticket,
-        totalQty: lastScanned.totalQty,
-        totalPrice: lastScanned.totalPrice,
-        totalBonus: lastScanned.totalBonus,
-        goods: lastScanned.goods
-      };
-      existing.push(record);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-      alert("保存しました。");
+  function exportCSV() {
+    const purchases = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (purchases.length === 0) {
+      alert("保存データがありません。");
+      return;
     }
 
-    function showData() {
-      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      const div = document.getElementById("data-list");
-      if (!list.length) return div.innerHTML = "<p>保存データはありません。</p>";
-
-      div.innerHTML = list.map(entry => {
-        let row = `<div class="entry"><p><strong>整理番号:</strong> ${entry.serial} / <strong>チケット番号:</strong> ${entry.ticket}</p>`;
-        row += `<p><strong>点数:</strong> ${entry.totalQty} / <strong>金額:</strong> ￥${entry.totalPrice} / <strong>カード:</strong> ${entry.totalBonus}</p>`;
-        row += `<details><summary>商品詳細</summary><table><thead><tr><th>商品名</th><th>数量</th></tr></thead><tbody>`;
-        entry.goods.forEach(i => {
-          const m = GOODS_MASTER.find(g => g.id === i.id) || { name: `ID:${i.id}` };
-          row += `<tr><td>${m.name}</td><td>${i.qty}</td></tr>`;
-        });
-        row += `</tbody></table></details></div>`;
-        return row;
-      }).join("");
-    }
-
-    function exportCSV() {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (!data.length) return alert("保存データがありません。");
-      let csv = "整理番号,チケット番号,合計点数,合計金額,カード枚数\n";
-      data.forEach(e => {
-        csv += `${e.serial},${e.ticket},${e.totalQty},${e.totalPrice},${e.totalBonus}\n`;
+    // CSVヘッダ
+    let csv = "チケット番号,商品ID,商品名,単価,数量,合計金額,応援カード枚数\n";
+    purchases.forEach(p => {
+      p.items.forEach(item => {
+        const line = [
+          p.ticket,
+          item.id,
+          item.name,
+          item.price,
+          item.qty,
+          (item.price * item.qty),
+          item.bonus * item.qty
+        ].join(",");
+        csv += line + "\n";
       });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "purchase_log.csv";
-      a.click();
-    }
-  </script>
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "purchase_data.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function formatReadable(data) {
+    if (!data) return "";
+    let text = `チケット番号: ${data.ticket}\n`;
+    text += `合計金額: ￥${data.items.reduce((acc, cur) => acc + cur.price * cur.qty, 0).toLocaleString()}\n`;
+    text += `応援カード枚数: ${data.items.reduce((acc, cur) => acc + cur.bonus * cur.qty, 0)}\n\n`;
+    text += "購入商品一覧:\n";
+    data.items.forEach(item => {
+      text += `・${item.name}（ID:${item.id}） x ${item.qty} 価格: ￥${(item.price * item.qty).toLocaleString()} 応援カード: ${item.bonus * item.qty}\n`;
+    });
+    return text;
+  }
+</script>
 
 </body>
 </html>

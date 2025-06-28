@@ -5,280 +5,175 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>物販購入ページ</title>
   <style>
-    body {
-      font-family: "Helvetica Neue", sans-serif;
-      background: #f9f9f9;
-      color: #333;
-      margin: 0;
-      padding: 1rem;
-    }
-    section {
-      max-width: 600px;
-      margin: 0 auto;
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2, h3 {
-      text-align: center;
-    }
-    input[type="text"], input[type="number"] {
-      width: 100%;
-      padding: 0.5rem;
-      margin: 0.5rem 0 1rem 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 48%;
-      padding: 0.7rem;
-      margin: 1rem 1%;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 0.5rem;
-      text-align: center;
-    }
-    #totals {
-      font-weight: bold;
-      margin-bottom: 1rem;
-      text-align: right;
-      font-size: 1.1rem;
-    }
+    body { font-family: sans-serif; background:#f9f9f9; margin:0; padding:1rem; color:#333; }
+    section { max-width:600px; margin:1rem auto; background:white; padding:1rem; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    h2, h3 { text-align:center; }
+    input[type="number"]{ width:60px; padding:0.3rem; }
+    table{ width:100%; border-collapse:collapse; margin-top:1rem;}
+    th,td{ border:1px solid #ccc; padding:0.5rem; text-align:center;}
+    #totals{ margin:1rem 0; font-weight:bold; text-align:right; }
+    button{ padding:0.7rem 1.2rem; margin:0.5rem; background:#007bff;color:white;border:none;border-radius:4px; cursor:pointer; }
+    button:hover{ background:#0056b3; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <h2 id="serial-title"></h2>
+  <h2 id="ticket-title">チケット番号: </h2>
 
-  <!-- 商品選択・数量入力を統合 -->
-  <section id="page1" class="active">
+  <section id="page1">
     <h3>商品選択・数量入力</h3>
-    <input type="text" id="ticket-input" placeholder="チケット番号を入力してください" />
-    <div id="totals">合計点数: 0 / 合計金額: 0円 / 応援カード枚数: 0</div>
+    <div id="totals">合計点数: 0 / 合計金額: 0 円 / 応援カード: 0 枚</div>
     <table id="goods-list">
-      <thead>
-        <tr><th>商品名</th><th>価格</th><th>応援カード枚数</th><th>数量</th></tr>
-      </thead>
+      <thead><tr><th>商品名</th><th>価格</th><th>カード</th><th>数量</th></tr></thead>
       <tbody></tbody>
     </table>
-    <button onclick="toPageConfirm()">確認へ</button>
+    <button onclick="toConfirm()">確認へ</button>
   </section>
 
-  <section id="pageConfirm" style="display:none;">
-    <h3>確認</h3>
+  <section id="pageConfirm" style="display:none">
+    <h3>ご確認内容</h3>
     <div id="confirm-summary"></div>
     <button onclick="backToSelection()">戻る</button>
-    <button onclick="toPageQR()">完了</button>
+    <button onclick="toQR()">完了（QR表示）</button>
   </section>
 
-  <section id="pageQR" style="display:none;">
-    <h3>QRコードを提示してください</h3>
+  <section id="pageQR" style="display:none">
+    <h3>こちらをスタッフに提示してください</h3>
     <div id="qrcode"></div>
   </section>
 
   <script>
+    // シリアル（秘密鍵）→ チケット番号 の対応
+    const SERIAL_MAP = {
+      "abc123": "A0001",
+      "def456": "A0002",
+      "ghi789": "A0003",
+      // 必要に応じて追加
+    };
+
     const GOODS = [
-      { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
-      { id: 2, name: "タオル", price: 1500, bonus: 1 },
-      { id: 3, name: "缶バッジ", price: 500, bonus: 0 },
-      { id: 4, name: "キャップ", price: 2500, bonus: 1 },
-      { id: 5, name: "ステッカー", price: 300, bonus: 0 },
-      { id: 6, name: "パーカー", price: 4500, bonus: 2 },
-      { id: 7, name: "トートバッグ", price: 1800, bonus: 1 },
-      { id: 8, name: "クリアファイル", price: 400, bonus: 0 },
-      { id: 9, name: "マグカップ", price: 1200, bonus: 1 },
-      { id: 10, name: "キーホルダー", price: 700, bonus: 0 },
-      { id: 11, name: "ポスター", price: 1500, bonus: 0 },
-      { id: 12, name: "ノート", price: 600, bonus: 0 },
-      { id: 13, name: "ペン", price: 400, bonus: 0 },
-      { id: 14, name: "スマホケース", price: 3000, bonus: 1 },
-      { id: 15, name: "イヤホンジャック", price: 350, bonus: 0 },
-      { id: 16, name: "ブレスレット", price: 1000, bonus: 1 },
-      { id: 17, name: "ネックレス", price: 2000, bonus: 1 },
-      { id: 18, name: "バンダナ", price: 800, bonus: 0 },
-      { id: 19, name: "ミニタオル", price: 700, bonus: 0 },
-      { id: 20, name: "シールセット", price: 500, bonus: 0 },
-      { id: 21, name: "ハンドタオル", price: 1000, bonus: 1 },
-      { id: 22, name: "リュックサック", price: 5000, bonus: 2 },
-      { id: 23, name: "サングラス", price: 1500, bonus: 1 },
-      { id: 24, name: "帽子", price: 2500, bonus: 1 },
-      { id: 25, name: "腕時計", price: 8000, bonus: 3 },
-      { id: 26, name: "カレンダー", price: 1200, bonus: 0 },
-      { id: 27, name: "エコバッグ", price: 900, bonus: 1 },
-      { id: 28, name: "カップホルダー", price: 700, bonus: 0 },
-      { id: 29, name: "ライトスティック", price: 3500, bonus: 2 },
-      { id: 30, name: "フィギュア", price: 15000, bonus: 5 }
+      { id: 1,  name: "Tシャツ", price:3000, bonus:1 },
+      { id: 2,  name: "タオル", price:1500, bonus:1 },
+      { id: 3,  name: "缶バッジ", price:500,  bonus:0 },
+      { id: 4,  name: "アクリルキーホルダー", price:800,  bonus:0 },
+      { id: 5,  name: "クリアファイル", price:400,  bonus:0 },
+      { id: 6,  name: "ポスター", price:700,  bonus:0 },
+      { id: 7,  name: "パンフレット", price:1200, bonus:1 },
+      { id: 8,  name: "ステッカー", price:300,  bonus:0 },
+      { id: 9,  name: "スマホスタンド", price:1300, bonus:1 },
+      { id:10, name: "マグカップ", price:1100, bonus:0 },
+      { id:11, name: "ペンライト", price:2500, bonus:1 },
+      { id:12, name: "ネックストラップ", price:600,  bonus:0 },
+      { id:13, name: "ピンズ", price:500,  bonus:0 },
+      { id:14, name: "キャップ", price:1800, bonus:1 },
+      { id:15, name: "リストバンド", price:450,  bonus:0 },
+      { id:16, name: "キーチェーン", price:750,  bonus:0 },
+      { id:17, name: "パーカー", price:4800, bonus:2 },
+      { id:18, name: "ロングTシャツ", price:3500, bonus:1 },
+      { id:19, name: "タペストリー", price:1600, bonus:1 },
+      { id:20, name: "メモ帳", price:350,  bonus:0 },
+      { id:21, name: "缶ケース", price:900,  bonus:0 },
+      { id:22, name: "ショルダーバッグ", price:2800, bonus:1 },
+      { id:23, name: "ノート", price:500,  bonus:0 },
+      { id:24, name: "消しゴム", price:200,  bonus:0 },
+      { id:25, name: "ペンセット", price:1000, bonus:1 },
+      { id:26, name: "うちわ", price:300,  bonus:0 },
+      { id:27, name: "ハンカチ", price:700,  bonus:0 },
+      { id:28, name: "タンブラー", price:2200, bonus:1 },
+      { id:29, name: "ラバーストラップ", price:600,  bonus:0 },
+      { id:30, name: "ステーショナリーセット", price:1500, bonus:1 }
     ];
 
-    const SERIAL_MAP = {
-      "abc123xyz": "昼の部01",
-      "def456uvw": "昼の部02",
-      "ghi789rst": "夜の部01"
-    };
+    let serial = "";
+    let ticket = "";
+    let stateGoods = [];
 
-    let state = {
-      serial: null,
-      ticket: "",
-      goodsWithQty: []  // 商品情報＋数量
-    };
-
-    function init() {
+    function init(){
       const params = new URLSearchParams(location.search);
-      const serial = params.get("serial");
-      if (!serial || !(serial in SERIAL_MAP)) {
-        document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:2rem;'>無効なアクセスです。QRコードを確認してください。</h2>";
+      serial = params.get("serial");
+      if(!serial){
+        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>シリアルがありません。</h2>";
         return;
       }
-      state.serial = serial;
-      document.getElementById("serial-title").textContent = "整理番号: " + SERIAL_MAP[serial];
-
-      // 商品一覧のtbodyに商品行をセット
+      ticket = SERIAL_MAP[serial];
+      if(!ticket){
+        document.body.innerHTML = `<h2 style='color:red; text-align:center;'>無効なシリアルです。</h2>`;
+        return;
+      }
+      // チケット番号のみ表示
+      document.getElementById("ticket-title").innerText = `チケット番号: ${ticket}`;
+      stateGoods = GOODS.map(g => ({...g, qty:0}));
       const tbody = document.querySelector("#goods-list tbody");
-      tbody.innerHTML = GOODS.map(g =>
-        `<tr>
+      tbody.innerHTML = stateGoods.map(g=>`
+        <tr>
           <td>${g.name}</td>
           <td>￥${g.price}</td>
           <td>${g.bonus}</td>
-          <td><input type="number" min="0" value="0" data-id="${g.id}" oninput="qtyChanged(event)" /></td>
-        </tr>`).join("");
-
-      // 初期化goodsWithQtyをGOODSのコピーにqty=0追加
-      state.goodsWithQty = GOODS.map(g => ({...g, qty: 0 }));
-
+          <td><input type="number" min="0" value="0" data-id="${g.id}" oninput="onQty(this)" /></td>
+        </tr>
+      `).join("");
       updateTotals();
     }
 
-    function qtyChanged(e) {
-      const id = Number(e.target.dataset.id);
-      const qty = Math.max(0, Number(e.target.value) || 0);
-      const good = state.goodsWithQty.find(g => g.id === id);
-      if (good) {
-        good.qty = qty;
-      }
+    function onQty(el){
+      const id = +el.dataset.id, qty = Math.max(0, +el.value||0);
+      const obj = stateGoods.find(g=>g.id===id);
+      if(obj) obj.qty = qty;
       updateTotals();
     }
 
-    function updateTotals() {
-      let totalQty = 0;
-      let totalPrice = 0;
-      let totalBonus = 0;
-      for (const g of state.goodsWithQty) {
-        totalQty += g.qty;
-        totalPrice += g.price * g.qty;
-        totalBonus += g.bonus * g.qty;
-      }
-      document.getElementById("totals").textContent = `合計点数: ${totalQty} / 合計金額: ${totalPrice}円 / 応援カード枚数: ${totalBonus}枚`;
+    function updateTotals(){
+      const totalQty = stateGoods.reduce((s,g)=>s+g.qty,0);
+      const totalPrice = stateGoods.reduce((s,g)=>s+g.price*g.qty,0);
+      const totalBonus = stateGoods.reduce((s,g)=>s+g.bonus*g.qty,0);
+      document.getElementById("totals").innerText = 
+        `合計点数: ${totalQty} / 合計金額: ${totalPrice} 円 / 応援カード: ${totalBonus} 枚`;
     }
 
-    function toPageConfirm() {
-      const ticket = document.getElementById("ticket-input").value.trim();
-      if (!ticket) {
-        alert("チケット番号を入力してください");
+    function toConfirm(){
+      const purchased = stateGoods.filter(g=>g.qty>0);
+      if(!purchased.length){
+        alert("購入する数量を入力してください");
         return;
       }
-      state.ticket = ticket;
-
-      // 購入数1以上の商品のみ抽出
-      const purchased = state.goodsWithQty.filter(g => g.qty > 0);
-      if (purchased.length === 0) {
-        alert("1つ以上の数量を入力してください");
-        return;
-      }
-
-      let summary = `<p>整理番号: ${SERIAL_MAP[state.serial]}</p>`;
-      summary += `<p>チケット番号: ${state.ticket}</p>`;
-      summary += `<table border="1" style="width:100%; border-collapse: collapse; margin-top: 1rem;">
-        <thead><tr><th>商品名</th><th>価格</th><th>数量</th><th>小計</th><th>カード枚数</th></tr></thead><tbody>`;
-
-      let totalQty = 0, totalPrice = 0, totalBonus = 0;
-      for (const g of purchased) {
-        const subTotal = g.price * g.qty;
-        const bonusCount = g.bonus * g.qty;
-        totalQty += g.qty;
-        totalPrice += subTotal;
-        totalBonus += bonusCount;
-        summary += `<tr>
-          <td>${g.name}</td>
-          <td>￥${g.price}</td>
-          <td>${g.qty}</td>
-          <td>￥${subTotal}</td>
-          <td>${bonusCount}</td>
-        </tr>`;
-      }
-      summary += `</tbody></table>`;
-      summary += `<p>合計点数: ${totalQty}</p><p>合計金額: ￥${totalPrice}</p><p>応援カード枚数: ${totalBonus}</p>`;
-      document.getElementById("confirm-summary").innerHTML = summary;
-
-      // 表示切替
-      document.getElementById("page1").style.display = "none";
-      document.getElementById("pageConfirm").style.display = "block";
-      document.getElementById("pageQR").style.display = "none";
-    }
-
-    function backToSelection() {
-      // 表示切替
-      document.getElementById("page1").style.display = "block";
-      document.getElementById("pageConfirm").style.display = "none";
-      document.getElementById("pageQR").style.display = "none";
-    }
-
-    function toPageQR() {
-      // QRコード生成ページ表示
-      document.getElementById("page1").style.display = "none";
-      document.getElementById("pageConfirm").style.display = "none";
-      document.getElementById("pageQR").style.display = "block";
-
-      // QRコード用ペイロード作成
-      const purchasedGoods = state.goodsWithQty
-        .filter(g => g.qty > 0)
-        .map(g => ({ id: g.id, qty: g.qty }));
-
-      const totalQty = purchasedGoods.reduce((sum, g) => sum + g.qty, 0);
-      const totalPrice = purchasedGoods.reduce((sum, g) => {
-        const good = GOODS.find(gg => gg.id === g.id);
-        return sum + (good.price * g.qty);
-      }, 0);
-      const totalBonus = purchasedGoods.reduce((sum, g) => {
-        const good = GOODS.find(gg => gg.id === g.id);
-        return sum + (good.bonus * g.qty);
-      }, 0);
-
-      const payload = {
-        serial: state.serial,
-        ticket: state.ticket,
-        goods: purchasedGoods,
-        totalQty: totalQty,
-        totalPrice: totalPrice,
-        totalBonus: totalBonus
-      };
-
-      const jsonStr = JSON.stringify(payload);
-
-      // QRコードクリアと生成
-      const qrContainer = document.getElementById("qrcode");
-      qrContainer.innerHTML = "";
-      new QRCode(qrContainer, {
-        text: jsonStr,
-        width: 256,
-        height: 256
+      let html = `<p>チケット番号: ${ticket}</p>`;
+      html += `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
+      purchased.forEach(g=> {
+        html += `<tr><td>${g.name}</td><td>${g.qty}</td><td>￥${g.price*g.qty}</td><td>${g.bonus*g.qty}</td></tr>`;
       });
+      const totalQty = purchased.reduce((s,g)=>s+g.qty,0);
+      const totalPrice = purchased.reduce((s,g)=>s+g.price*g.qty,0);
+      const totalBonus = purchased.reduce((s,g)=>s+g.bonus*g.qty,0);
+      html += `</tbody></table>
+               <p>合計点数: ${totalQty}</p><p>合計金額: ￥${totalPrice}</p><p>応援カード: ${totalBonus} 枚</p>`;
+      document.getElementById("confirm-summary").innerHTML = html;
+      document.getElementById("page1").style.display="none";
+      document.getElementById("pageConfirm").style.display="block";
+    }
+
+    function backToSelection(){
+      document.getElementById("page1").style.display="block";
+      document.getElementById("pageConfirm").style.display="none";
+      document.getElementById("pageQR").style.display="none";
+    }
+
+    function toQR(){
+      document.getElementById("pageConfirm").style.display="none";
+      document.getElementById("pageQR").style.display="block";
+      const purchased = stateGoods.filter(g=>g.qty>0).map(g=>({id:g.id,qty:g.qty}));
+      const totalQty = purchased.reduce((s,g)=>s+g.qty,0);
+      const totalPrice = purchased.reduce((s,g)=>{
+        const obj = GOODS.find(x=>x.id===g.id); return s + obj.price * g.qty;
+      },0);
+      const totalBonus = purchased.reduce((s,g)=>{
+        const obj = GOODS.find(x=>x.id===g.id); return s + obj.bonus * g.qty;
+      },0);
+      // QRコードに含めるのはチケット番号＋購入情報のみ
+      const payload = { ticket, goods:purchased, totalQty, totalPrice, totalBonus };
+      const txt = JSON.stringify(payload);
+      const qrDiv = document.getElementById("qrcode");
+      qrDiv.innerHTML = "";
+      new QRCode(qrDiv, { text: txt, width:256, height:256 });
     }
 
     window.onload = init;
