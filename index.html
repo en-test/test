@@ -198,11 +198,13 @@ function toPage3() {
 function toPage4() {
   const qrDiv = document.getElementById("qrcode");
   qrDiv.innerHTML = "";
+  // ここで商品名や価格を削除しIDと数量だけに絞る
   const payload = {
     serial: state.serial,
     ticket: state.ticket,
-    goods: state.selectedGoods.map(g => ({ id: g.id, name: g.name, qty: g.qty, price: g.price }))
+    goods: state.selectedGoods.map(g => ({ id: g.id, qty: g.qty }))
   };
+  console.log("toPage4() called, payload:", JSON.stringify(payload));
   new QRCode(qrDiv, {
     text: JSON.stringify(payload),
     width: 256,
