@@ -2,25 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>物販管理 - 運営用</title>
+  <title>物販管理（運営用）</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: sans-serif; padding: 1em; }
+    body { font-family: sans-serif; padding: 1rem; }
     #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
     .section { margin: 1.5em 0; }
     .entry { border: 1px solid #ccc; padding: 0.5em; margin-bottom: 0.5em; }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 0.5em;
-      text-align: center;
-    }
-    th {
-      background-color: #f0f0f0;
-    }
+    table { border-collapse: collapse; width: 100%; margin-top: 0.5em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; text-align: center; }
+    th { background: #f5f5f5; }
   </style>
 </head>
 <body>
@@ -36,9 +27,7 @@
 
   <div class="section">
     <h2>② 読み取り結果</h2>
-    <div id="scan-result" style="white-space: normal; border: 1px solid #ccc; padding: 1em; min-height: 100px;">
-      未読み取り
-    </div>
+    <div id="scan-result" style="border:1px solid #ccc; padding:1em; min-height:120px;">未読み取り</div>
     <button onclick="saveData()">保存する</button>
   </div>
 
@@ -54,68 +43,68 @@
   </div>
 
   <script>
-    let lastScannedData = null;
-    const STORAGE_KEY = "purchases";
+    const GOODS_MASTER = [
+      { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
+      { id: 2, name: "タオル", price: 1500, bonus: 1 },
+      { id: 3, name: "缶バッジ", price: 500, bonus: 0 },
+      { id: 4, name: "ステッカー", price: 300, bonus: 0 },
+      { id: 5, name: "ペンライト", price: 2000, bonus: 1 },
+      { id: 6, name: "リストバンド", price: 800, bonus: 0 },
+      { id: 7, name: "ポスター", price: 1000, bonus: 0 },
+      { id: 8, name: "アクリルスタンド", price: 1800, bonus: 1 },
+      { id: 9, name: "キーホルダー", price: 1200, bonus: 0 },
+      { id: 10, name: "クリアファイル", price: 400, bonus: 0 },
+      { id: 11, name: "マグカップ", price: 1500, bonus: 0 },
+      { id: 12, name: "スマホリング", price: 1000, bonus: 0 },
+      { id: 13, name: "ネックストラップ", price: 700, bonus: 0 },
+      { id: 14, name: "メモ帳", price: 500, bonus: 0 },
+      { id: 15, name: "ピンバッジ", price: 600, bonus: 0 },
+      { id: 16, name: "マフラータオル", price: 1800, bonus: 1 },
+      { id: 17, name: "ショッピングバッグ", price: 1000, bonus: 0 },
+      { id: 18, name: "うちわ", price: 400, bonus: 0 },
+      { id: 19, name: "ラバーバンド", price: 500, bonus: 0 },
+      { id: 20, name: "カレンダー", price: 1200, bonus: 0 },
+      { id: 21, name: "ボールペン", price: 300, bonus: 0 },
+      { id: 22, name: "パーカー", price: 4500, bonus: 1 },
+      { id: 23, name: "ブロマイド", price: 200, bonus: 0 },
+      { id: 24, name: "巾着", price: 900, bonus: 0 },
+      { id: 25, name: "DVD", price: 3500, bonus: 1 },
+      { id: 26, name: "トートバッグ", price: 2000, bonus: 1 },
+      { id: 27, name: "イヤホン", price: 2500, bonus: 1 },
+      { id: 28, name: "メガネ拭き", price: 600, bonus: 0 },
+      { id: 29, name: "ノート", price: 400, bonus: 0 },
+      { id: 30, name: "お守り", price: 800, bonus: 0 }
+    ];
 
-    // QRコード読み取り開始
+    let lastScanned = null;
+    const STORAGE_KEY = "purchases";
     let qrScanner = null;
+
     function startScan() {
+      if (qrScanner) return;
       qrScanner = new Html5Qrcode("reader");
       qrScanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
-        (decodedText) => {
+        (decoded) => {
           try {
-            const data = JSON.parse(decodedText);
-
-            // 商品IDだけの場合は補完したいならここでできる（運営側で商品マスタ持つなど）
-            // ここでは商品IDに対応する名前などを展開例
-            // 例の商品マスタ（必要に応じて編集してください）
-            const productMaster = {
-              1: { name: "Tシャツ", price: 3000, bonus: 1 },
-              2: { name: "タオル", price: 1500, bonus: 1 },
-              3: { name: "缶バッジ", price: 500, bonus: 0 }
-            };
-
-            // goods → items にしてる想定なら以下も調整してください
-            const itemsRaw = data.goods || data.items || [];
-
-            // 商品情報を補完
-            const expandedItems = itemsRaw.map(item => {
-              const master = productMaster[item.id] || {};
-              return {
-                id: item.id,
-                name: master.name || "不明な商品",
-                price: master.price || 0,
-                bonus: master.bonus || 0,
-                qty: item.qty || 0
-              };
-            });
-
-            const displayData = {
-              serial: data.serial || "",
-              ticket: data.ticket || "",
-              items: expandedItems
-            };
-
-            lastScannedData = displayData;
-
-            document.getElementById("scan-result").innerHTML = renderScanResult(displayData);
-            stopScan(); // 読み取ったら自動で停止
-          } catch (e) {
+            const data = JSON.parse(decoded);
+            lastScanned = data;
+            document.getElementById("scan-result").innerHTML = renderScanResult(data);
+            stopScan();
+          } catch {
             document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではない）";
-            lastScannedData = null;
+            lastScanned = null;
           }
         }
-      ).catch(err => {
-        alert("カメラの起動に失敗しました：" + err);
-      });
+      ).catch(err => alert("カメラ起動失敗: " + err));
     }
 
     function stopScan() {
       if (qrScanner) {
         qrScanner.stop().then(() => {
           qrScanner.clear();
+          qrScanner = null;
         });
       }
     }
@@ -123,105 +112,64 @@
     function renderScanResult(data) {
       let html = `<p><strong>整理番号:</strong> ${data.serial}</p>`;
       html += `<p><strong>チケット番号:</strong> ${data.ticket}</p>`;
+      html += `<p><strong>合計点数:</strong> ${data.totalQty} / <strong>合計金額:</strong> ￥${data.totalPrice} / <strong>応援カード:</strong> ${data.totalBonus}</p>`;
 
-      if (!data.items || data.items.length === 0) {
-        html += `<p>商品データなし</p>`;
-      } else {
-        html += `<table><thead><tr><th>商品名</th><th>単価(円)</th><th>数量</th><th>小計(円)</th><th>カード枚数</th></tr></thead><tbody>`;
+      if (!data.goods?.length) return html + `<p>商品データがありません。</p>`;
 
-        data.items.forEach(item => {
-          const subtotal = item.price * item.qty;
-          const cardCount = item.bonus * item.qty;
-          html += `<tr>
-            <td>${item.name}</td>
-            <td>${item.price.toLocaleString()}</td>
-            <td>${item.qty}</td>
-            <td>${subtotal.toLocaleString()}</td>
-            <td>${cardCount}</td>
-          </tr>`;
-        });
-
-        html += `</tbody></table>`;
-      }
+      html += `<table><thead><tr><th>商品名</th><th>数量</th></tr></thead><tbody>`;
+      data.goods.forEach(item => {
+        const m = GOODS_MASTER.find(g => g.id === item.id) || { name: `ID:${item.id}` };
+        html += `<tr><td>${m.name}</td><td>${item.qty}</td></tr>`;
+      });
+      html += `</tbody></table>`;
       return html;
     }
 
-    // 保存処理
     function saveData() {
-      if (!lastScannedData) {
-        alert("保存するデータがありません。QRを読み取ってください。");
-        return;
-      }
+      if (!lastScanned) return alert("QRコードを読み取ってください");
       const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (existing.some(e => e.serial === lastScannedData.serial)) {
-        alert("この整理番号は既に保存済みです。");
-        return;
+      if (existing.some(e => e.serial === lastScanned.serial)) {
+        return alert("この整理番号は既に保存済みです。");
       }
 
-      // 合計金額・カード枚数を計算して追加して保存
-      const total = lastScannedData.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const card = lastScannedData.items.reduce((sum, item) => sum + (item.bonus * item.qty), 0);
-
-      const saveObj = {
-        serial: lastScannedData.serial,
-        ticket: lastScannedData.ticket,
-        total,
-        card,
-        items: lastScannedData.items
+      const record = {
+        serial: lastScanned.serial,
+        ticket: lastScanned.ticket,
+        totalQty: lastScanned.totalQty,
+        totalPrice: lastScanned.totalPrice,
+        totalBonus: lastScanned.totalBonus,
+        goods: lastScanned.goods
       };
-
-      existing.push(saveObj);
+      existing.push(record);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
       alert("保存しました。");
     }
 
-    // 一覧表示
     function showData() {
       const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      const container = document.getElementById("data-list");
-      if (list.length === 0) {
-        container.innerHTML = "<p>保存データはありません。</p>";
-        return;
-      }
-      container.innerHTML = list.map(e => `
-        <div class="entry">
-          <strong>整理番号:</strong> ${e.serial}<br>
-          <strong>チケット番号:</strong> ${e.ticket}<br>
-          <strong>合計金額:</strong> ￥${e.total.toLocaleString()}<br>
-          <strong>カード枚数:</strong> ${e.card}<br>
-          <details>
-            <summary>詳細</summary>
-            <table>
-              <thead><tr><th>商品名</th><th>単価(円)</th><th>数量</th><th>小計(円)</th><th>カード枚数</th></tr></thead>
-              <tbody>
-                ${e.items.map(item => `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td>${item.price.toLocaleString()}</td>
-                    <td>${item.qty}</td>
-                    <td>${(item.price * item.qty).toLocaleString()}</td>
-                    <td>${item.bonus * item.qty}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </details>
-        </div>
-      `).join("");
+      const div = document.getElementById("data-list");
+      if (!list.length) return div.innerHTML = "<p>保存データはありません。</p>";
+
+      div.innerHTML = list.map(entry => {
+        let row = `<div class="entry"><p><strong>整理番号:</strong> ${entry.serial} / <strong>チケット番号:</strong> ${entry.ticket}</p>`;
+        row += `<p><strong>点数:</strong> ${entry.totalQty} / <strong>金額:</strong> ￥${entry.totalPrice} / <strong>カード:</strong> ${entry.totalBonus}</p>`;
+        row += `<details><summary>商品詳細</summary><table><thead><tr><th>商品名</th><th>数量</th></tr></thead><tbody>`;
+        entry.goods.forEach(i => {
+          const m = GOODS_MASTER.find(g => g.id === i.id) || { name: `ID:${i.id}` };
+          row += `<tr><td>${m.name}</td><td>${i.qty}</td></tr>`;
+        });
+        row += `</tbody></table></details></div>`;
+        return row;
+      }).join("");
     }
 
-    // CSV出力
     function exportCSV() {
       const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (data.length === 0) {
-        alert("保存データがありません。");
-        return;
-      }
-      let csv = "整理番号,チケット番号,合計金額,カード枚数\n";
+      if (!data.length) return alert("保存データがありません。");
+      let csv = "整理番号,チケット番号,合計点数,合計金額,カード枚数\n";
       data.forEach(e => {
-        csv += `${e.serial},${e.ticket},${e.total},${e.card}\n`;
+        csv += `${e.serial},${e.ticket},${e.totalQty},${e.totalPrice},${e.totalBonus}\n`;
       });
-
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
