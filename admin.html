@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>物販管理 - 運営用</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
+    .section { margin: 1.5em 0; }
+    .entry { border: 1px solid #ccc; padding: 0.5em; margin-bottom: 0.5em; }
+  </style>
+</head>
+<body>
+
+  <h1>物販管理（運営用）</h1>
+
+  <div class="section">
+    <h2>① QRコード読み取り</h2>
+    <div id="reader"></div>
+    <button onclick="startScan()">スキャン開始</button>
+    <button onclick="stopScan()">スキャン停止</button>
+  </div>
+
+  <div class="section">
+    <h2>② 読み取り結果</h2>
+    <pre id="scan-result">未読み取り</pre>
+    <button onclick="saveData()">保存する</button>
+  </div>
+
+  <div class="section">
+    <h2>③ 保存データ一覧</h2>
+    <button onclick="showData()">一覧を表示</button>
+    <div id="data-list"></div>
+  </div>
+
+  <div class="section">
+    <h2>④ CSV出力</h2>
+    <button onclick="exportCSV()">CSVをダウンロード</button>
+  </div>
+
+  <script>
+    let lastScannedData = null;
+    const STORAGE_KEY = "purchases";
+
+    let qrScanner = null;
+
+    function startScan() {
+      if (qrScanner) {
+        alert("スキャンは既に開始されています");
+        return;
+      }
+      qrScanner = new Html5Qrcode("reader");
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          try {
+            const data = JSON.parse(decodedText);
+            lastScannedData = data;
+            document.getElementById("scan-result").textContent = JSON.stringify(data, null, 2);
+            stopScan(); // 読み取り成功したら自動停止
+          } catch (e) {
+            document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではありません）";
+          }
+        }
+      ).catch(err => {
+        alert("カメラの起動に失敗しました：" + err);
+        qrScanner = null;
+      });
+    }
+
+    function stopScan() {
+      if (qrScanner) {
+        qrScanner.stop()
+          .then(() => {
+            qrScanner.clear();
+            qrScanner = null;
+          })
+          .catch(err => {
+            console.error("停止時エラー", err);
+          });
+      }
+    }
+
+    function saveData() {
+      if (!lastScannedData) {
+        alert("保存するデータがありません。QRコードを読み取ってください。");
+        return;
+      }
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+      if (existing.some(e => e.serial === lastScannedData.serial)) {
+        alert("この整理番号は既に保存済みです。");
+        return;
+      }
+
+      // QRコードのgoodsをitemsに変換して保存
+      const record = {
+        serial: lastScannedData.serial,
+        ticket: lastScannedData.ticket,
+        total: lastScannedData.total || 0,
+        card: lastScannedData.card || 0,
+        items: lastScannedData.goods || []
+      };
+
+      existing.push(record);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+      alert("保存しました。");
+    }
+
+    function showData() {
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const container = document.getElementById("data-list");
+      if (list.length === 0) {
+        container.innerHTML = "<p>保存データはありません。</p>";
+        return;
+      }
+      container.innerHTML = list.map(e => `
+        <div class="entry">
+          <strong>整理番号:</strong> ${e.serial}<br>
+          <strong>チケット番号:</strong> ${e.ticket}<br>
+          <strong>合計金額:</strong> ￥${e.total} 円<br>
+          <strong>カード枚数:</strong> ${e.card}<br>
+          <details>
+            <summary>詳細（購入商品）</summary>
+            <pre>${JSON.stringify(e.items, null, 2)}</pre>
+          </details>
+        </div>
+      `).join("");
+    }
+
+    function exportCSV() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (data.length === 0) {
+        alert("保存データがありません。");
+        return;
+      }
+      let csv = "整理番号,チケット番号,合計金額,カード枚数\n";
+      data.forEach(e => {
+        csv += `${e.serial},${e.ticket},${e.total},${e.card}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "purchase_log.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+
+</body>
+</html>
