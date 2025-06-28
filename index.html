@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>物販購入ページ</title>
+  <style>
+    body {
+      font-family: "Helvetica Neue", sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 0;
+      padding: 1rem;
+    }
+    section {
+      display: none;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    section.active {
+      display: block;
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 48%;
+      padding: 0.7rem;
+      margin: 1rem 1%;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: center;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<h2 id="serial-title"></h2>
+
+<section id="page1" class="active">
+  <h3>商品選択</h3>
+  <input type="text" id="ticket-input" placeholder="チケット番号" />
+  <table id="goods-list">
+    <thead>
+      <tr><th>選択</th><th>商品名</th><th>価格</th><th>備考</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="toPage2()">次へ</button>
+</section>
+
+<section id="page2">
+  <h3>数量入力</h3>
+  <table id="goods-quantity-list">
+    <thead>
+      <tr><th>商品名</th><th>価格</th><th>数量</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p>合計点数: <span id="total-qty">0</span> / 合計金額: <span id="total-price">0</span>円 / カード枚数: <span id="total-bonus">0</span></p>
+  <button onclick="toPage1()">戻る</button>
+  <button onclick="toPage3()">確認</button>
+</section>
+
+<section id="page3">
+  <h3>確認</h3>
+  <div id="confirm-summary"></div>
+  <button onclick="toPage2()">戻る</button>
+  <button onclick="toPage4()">完了</button>
+</section>
+
+<section id="page4">
+  <h3>QRコードを提示してください</h3>
+  <div id="qrcode"></div>
+</section>
+
+<script>
+const GOODS = [
+  { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
+  { id: 2, name: "タオル", price: 1500, bonus: 1 },
+  { id: 3, name: "缶バッジ", price: 500, bonus: 0 }
+];
+
+const SERIAL_MAP = {
+  "abc123xyz": "昼の部01",
+  "def456uvw": "昼の部02",
+  "ghi789rst": "夜の部01"
+};
+
+let state = {
+  serial: null,
+  ticket: "",
+  selectedGoods: []
+};
+
+function showPage(n) {
+  document.querySelectorAll("section").forEach((s, i) => {
+    s.classList.toggle("active", s.id === `page${n+1}`);
+  });
+}
+
+function init() {
+  const params = new URLSearchParams(location.search);
+  const serial = params.get("serial");
+  if (!serial || !(serial in SERIAL_MAP)) {
+    document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:2rem;'>無効なアクセスです。QRコードを確認してください。</h2>";
+    return;
+  }
+  state.serial = serial;
+  document.getElementById("serial-title").textContent = "整理番号: " + SERIAL_MAP[serial];
+  const tbody = document.querySelector("#goods-list tbody");
+  tbody.innerHTML = GOODS.map(g =>
+    `<tr><td><input type='checkbox' value='${g.id}' /></td><td>${g.name}</td><td>￥${g.price}</td><td>${g.bonus ? "カード付き" : "カードなし"}</td></tr>`
+  ).join("");
+}
+
+function toPage1() {
+  showPage(0);
+}
+
+function toPage2() {
+  const ticket = document.getElementById("ticket-input").value.trim();
+  if (!ticket) return alert("チケット番号を入力してください");
+  state.ticket = ticket;
+  const selected = Array.from(document.querySelectorAll("#goods-list input:checked"))
+    .map(input => GOODS.find(g => g.id == input.value));
+  if (selected.length === 0) return alert("商品を1つ以上選んでください");
+  state.selectedGoods = selected.map(g => ({ ...g, qty: 0 }));
+  const tbody = document.querySelector("#goods-quantity-list tbody");
+  tbody.innerHTML = state.selectedGoods.map((g, i) =>
+    `<tr><td>${g.name}</td><td>￥${g.price}</td><td><input type='number' min='0' value='0' onchange='updateQty(${i}, this.value)' /></td></tr>`
+  ).join("");
+  updateTotals();
+  showPage(1);
+}
+
+function updateQty(i, value) {
+  state.selectedGoods[i].qty = parseInt(value) || 0;
+  updateTotals();
+}
+
+function updateTotals() {
+  let totalQty = 0, totalPrice = 0, totalBonus = 0;
+  for (const g of state.selectedGoods) {
+    totalQty += g.qty;
+    totalPrice += g.qty * g.price;
+    totalBonus += g.qty * g.bonus;
+  }
+  document.getElementById("total-qty").textContent = totalQty;
+  document.getElementById("total-price").textContent = totalPrice;
+  document.getElementById("total-bonus").textContent = totalBonus;
+}
+
+function toPage3() {
+  const filtered = state.selectedGoods.filter(g => g.qty > 0);
+  if (filtered.length === 0) return alert("購入数を1つ以上入力してください");
+  state.selectedGoods = filtered;
+  let total = 0;
+  const rows = state.selectedGoods.map(g => {
+    const price = g.qty * g.price;
+    total += price;
+    return `<tr><td>${g.name}</td><td>${g.qty}</td><td>￥${price}</td></tr>`;
+  }).join("");
+  document.getElementById("confirm-summary").innerHTML =
+    `<p>チケット番号: ${state.ticket}</p><table><thead><tr><th>商品</th><th>数量</th><th>金額</th></tr></thead><tbody>${rows}</tbody></table>` +
+    `<p>合計金額: ￥${total}</p>`;
+  showPage(2);
+}
+
+function toPage4() {
+  const qrDiv = document.getElementById("qrcode");
+  qrDiv.innerHTML = "";
+  const payload = {
+    serial: state.serial,
+    ticket: state.ticket,
+    goods: state.selectedGoods.map(g => ({ id: g.id, name: g.name, qty: g.qty, price: g.price }))
+  };
+  new QRCode(qrDiv, {
+    text: JSON.stringify(payload),
+    width: 256,
+    height: 256
+  });
+  showPage(3);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
