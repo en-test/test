@@ -9,6 +9,7 @@
     #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
     .section { margin: 1.5em 0; }
     .entry { border: 1px solid #ccc; padding: 0.5em; margin-bottom: 0.5em; }
+    details { background: #f1f1f1; padding: 0.5em; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -23,7 +24,7 @@
   </div>
 
   <div class="section">
-    <h2>② 購入リスト</h2>
+    <h2>② 読み取り結果</h2>
     <pre id="scan-result">未読み取り</pre>
     <button onclick="saveData()">保存する</button>
   </div>
@@ -39,136 +40,147 @@
     <button onclick="exportCSV()">CSVをダウンロード</button>
   </div>
 
-<script>
-  // 商品マスタ（購入画面と同じ内容をここに記述）
-  const GOODS_MASTER = [
-    { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
-    { id: 2, name: "タオル", price: 1500, bonus: 1 },
-    { id: 3, name: "缶バッジ", price: 500, bonus: 0 }
-    // 必要に応じてここに最大30種類まで追加可能
-  ];
+  <script>
+    // 物販商品情報 (購入画面と合わせて管理)
+    const GOODS = [
+      { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
+      { id: 2, name: "タオル", price: 1500, bonus: 1 },
+      { id: 3, name: "缶バッジ", price: 500, bonus: 0 }
+      // ... 他商品を追加する場合はここに
+    ];
 
-  let lastScannedData = null;
-  const STORAGE_KEY = "purchases";
-  let qrScanner = null;
+    let lastScannedData = null;
+    const STORAGE_KEY = "purchases";
 
-  // QRコード読み取り開始
-  function startScan() {
-    qrScanner = new Html5Qrcode("reader");
-    qrScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      (decodedText) => {
-        try {
-          const data = JSON.parse(decodedText);
-          lastScannedData = data;
-          document.getElementById("scan-result").textContent = JSON.stringify(data, null, 2);
-          stopScan();
-        } catch (e) {
-          document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではない）";
-        }
-      }
-    ).catch(err => {
-      alert("カメラの起動に失敗しました：" + err);
-    });
-  }
-
-  // QRコード読み取り停止
-  function stopScan() {
-    if (qrScanner) {
-      qrScanner.stop().then(() => {
-        qrScanner.clear();
+    // 商品ID配列を展開し、商品名・価格などを補完
+    function expandGoods(goodsArray) {
+      return goodsArray.map(g => {
+        const ref = GOODS.find(item => item.id === g.id);
+        if (!ref) return { ...g, name: "不明な商品", price: 0, bonus: 0 };
+        return {
+          id: g.id,
+          name: ref.name,
+          price: ref.price,
+          bonus: ref.bonus,
+          qty: g.qty || 0
+        };
       });
     }
-  }
 
-  // 商品IDと数量の配列から詳細商品情報に展開
-  function expandGoods(goodsArray) {
-    return goodsArray.map(item => {
-      const master = GOODS_MASTER.find(g => g.id === item.id);
-      return {
-        id: item.id,
-        name: master ? master.name : "不明な商品ID:" + item.id,
-        price: master ? master.price : 0,
-        bonus: master ? master.bonus : 0,
-        qty: item.qty
+    // QRコード読み取り開始
+    let qrScanner = null;
+    function startScan() {
+      if (qrScanner) return; // 多重起動防止
+      qrScanner = new Html5Qrcode("reader");
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          try {
+            const data = JSON.parse(decodedText);
+            lastScannedData = data;
+
+            // 展開済み商品リスト作成
+            const expandedItems = expandGoods(data.goods || []);
+            const displayData = {
+              serial: data.serial || "",
+              ticket: data.ticket || "",
+              items: expandedItems
+            };
+
+            document.getElementById("scan-result").textContent = JSON.stringify(displayData, null, 2);
+
+            stopScan(); // 読み取ったら自動停止
+          } catch (e) {
+            document.getElementById("scan-result").textContent = "読み取り失敗（JSON形式ではない）";
+          }
+        }
+      ).catch(err => {
+        alert("カメラの起動に失敗しました：" + err);
+      });
+    }
+
+    function stopScan() {
+      if (qrScanner) {
+        qrScanner.stop().then(() => {
+          qrScanner.clear();
+          qrScanner = null;
+        });
+      }
+    }
+
+    // 保存処理
+    function saveData() {
+      if (!lastScannedData) {
+        alert("保存するデータがありません。QRを読み取ってください。");
+        return;
+      }
+
+      const items = expandGoods(lastScannedData.goods || []);
+
+      const total = items.reduce((sum, g) => sum + g.price * g.qty, 0);
+      const card = items.reduce((sum, g) => sum + g.bonus * g.qty, 0);
+
+      const record = {
+        serial: lastScannedData.serial || "",
+        ticket: lastScannedData.ticket || "",
+        items: items,
+        total: total,
+        card: card
       };
-    });
-  }
 
-  // 保存処理
-  function saveData() {
-    if (!lastScannedData) {
-      alert("保存するデータがありません。QRを読み取ってください。");
-      return;
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (existing.some(e => e.serial === record.serial)) {
+        alert("この整理番号は既に保存済みです。");
+        return;
+      }
+      existing.push(record);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+      alert("保存しました。");
     }
-    // 商品展開
-    const items = expandGoods(lastScannedData.goods || []);
-    // 合計計算
-    const total = items.reduce((sum, g) => sum + g.price * g.qty, 0);
-    const card = items.reduce((sum, g) => sum + g.bonus * g.qty, 0);
 
-    const record = {
-      serial: lastScannedData.serial || "",
-      ticket: lastScannedData.ticket || "",
-      items: items,
-      total: total,
-      card: card
-    };
-
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (existing.some(e => e.serial === record.serial)) {
-      alert("この整理番号は既に保存済みです。");
-      return;
+    // 一覧表示
+    function showData() {
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const container = document.getElementById("data-list");
+      if (list.length === 0) {
+        container.innerHTML = "<p>保存データはありません。</p>";
+        return;
+      }
+      container.innerHTML = list.map(e => `
+        <div class="entry">
+          <strong>整理番号:</strong> ${e.serial}<br>
+          <strong>チケット番号:</strong> ${e.ticket}<br>
+          <strong>合計金額:</strong> ￥${e.total}<br>
+          <strong>カード枚数:</strong> ${e.card}<br>
+          <details>
+            <summary>詳細（商品一覧）</summary>
+            <pre>${JSON.stringify(e.items, null, 2)}</pre>
+          </details>
+        </div>
+      `).join("");
     }
-    existing.push(record);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-    alert("保存しました。");
-  }
 
-  // 保存データ一覧表示
-  function showData() {
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const container = document.getElementById("data-list");
-    if (list.length === 0) {
-      container.innerHTML = "<p>保存データはありません。</p>";
-      return;
+    // CSV出力
+    function exportCSV() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (data.length === 0) {
+        alert("保存データがありません。");
+        return;
+      }
+      let csv = "整理番号,チケット番号,合計金額,カード枚数\n";
+      data.forEach(e => {
+        csv += `${e.serial},${e.ticket},${e.total},${e.card}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "purchase_log.csv";
+      a.click();
     }
-    container.innerHTML = list.map(e => `
-      <div class="entry">
-        <strong>整理番号:</strong> ${e.serial}<br>
-        <strong>チケット番号:</strong> ${e.ticket}<br>
-        <strong>合計金額:</strong> ${e.total} 円<br>
-        <strong>カード枚数:</strong> ${e.card}<br>
-        <details>
-          <summary>詳細</summary>
-          <pre>${JSON.stringify(e.items, null, 2)}</pre>
-        </details>
-      </div>
-    `).join("");
-  }
-
-  // CSV出力処理
-  function exportCSV() {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (data.length === 0) {
-      alert("保存データがありません。");
-      return;
-    }
-    let csv = "整理番号,チケット番号,合計金額,カード枚数\n";
-    data.forEach(e => {
-      // カンマや改行を含む可能性があるので必要に応じてエスケープ対応も検討してください
-      csv += `${e.serial},${e.ticket},${e.total},${e.card}\n`;
-    });
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "purchase_log.csv";
-    a.click();
-  }
-</script>
+  </script>
 
 </body>
 </html>
