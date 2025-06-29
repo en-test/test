@@ -133,7 +133,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <h2 id="ticket-title">チケット番号: </h2>
+  <h2 id="ticket-title">第2回 俺たちは、芝居がしたい！<br>- 昼の部 -</h2>
 
   <section id="page1">
     <h3>商品選択・数量入力</h3>
@@ -196,7 +196,7 @@
         return;
       }
 
-      document.getElementById("ticket-title").innerText = `チケット番号: ${ticket}`;
+      document.getElementById("ticket-title").innerHTML = `第2回 俺たちは、芝居がしたい！<br>- 昼の部 -<br>チケット番号 : ${ticket}`;
       stateGoods = GOODS.map(g => ({ ...g, qty: g.id === 1 ? 1 : 0 }));
       const container = document.getElementById("goods-cards");
       container.innerHTML = stateGoods.map(g => {
@@ -239,14 +239,13 @@
         alert("購入する数量を入力してください");
         return;
       }
-      let html = `<p>チケット番号: ${ticket}</p>`;
-      html += `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
+      let html = `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
       purchased.forEach(g => {
         html += `<tr><td>${g.name}</td><td>${g.qty}</td><td>￥${g.price * g.qty}</td><td>${g.bonus * g.qty}</td></tr>`;
       });
       html += `</tbody></table>
-               <p>合計金額: ￥${purchased.reduce((s,g)=>s+g.price*g.qty,0)}</p>
-               <p>応援カード: ${purchased.reduce((s,g)=>s+g.bonus*g.qty,0)} 枚</p>`;
+               <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：￥${purchased.reduce((s,g)=>s+g.price*g.qty,0)}</p>
+               <p style="font-weight: bold; font-size: 1.1rem;">応援カード合計：${purchased.reduce((s,g)=>s+g.bonus*g.qty,0)} 枚</p>`;
       document.getElementById("confirm-summary").innerHTML = html;
       document.getElementById("page1").style.display = "none";
       document.getElementById("pageConfirm").style.display = "block";
