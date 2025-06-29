@@ -32,25 +32,23 @@
   </div>
 
   <div class="section">
-    <h2>③ 保存データ一覧</h2>
+    <h2>③ 購入データ一覧</h2>
     <button onclick="showData()">一覧を表示</button>
+    <button onclick="exportCSV()">CSVでダウンロード</button>
     <div id="data-list"></div>
   </div>
 
   <div class="section">
-    <h2>④ CSV出力</h2>
-    <button onclick="exportCSV()">CSVをダウンロード</button>
+    <h2>④ 在庫一覧</h2>
+    <button onclick="showInventory()">在庫を表示</button>
+    <button onclick="initInventory()">在庫リセット</button>
+    <div id="inventory-list"></div>
   </div>
 
   <div class="section">
     <h2>⑤ 保存データ削除</h2>
-    <button onclick="clearStorage()">保存データを全削除</button>
-  </div>
-
-  <div class="section">
-    <h2>⑥ 在庫一覧</h2>
-    <button onclick="showInventory()">在庫を表示</button>
-    <div id="inventory-list"></div>
+    <button onclick="clearStorage()">購入データを全削除</button>
+    <button onclick="clearInventory()">在庫データを全削除</button>
   </div>
 
 <script>
@@ -110,7 +108,6 @@ window.onload = function() {
   if (!localStorage.getItem(INVENTORY_KEY)) {
     localStorage.setItem(INVENTORY_KEY, JSON.stringify(customStock));
   }
-  alert("在庫を初期化しました");
 }
 
 function startScan() {
@@ -212,11 +209,17 @@ function exportCSV() {
 }
 
 function clearStorage() {
-  if (confirm("すべての保存データを削除します。よろしいですか？")) {
+  if (confirm("すべての購入データを削除します。よろしいですか？")) {
     localStorage.removeItem(STORAGE_KEY);
-    alert("保存データを削除しました。");
+    alert("購入データを削除しました。");
     document.getElementById("data-list").innerHTML = "";
   }
+}
+
+function initInventory() {
+  // localStorageに在庫数を設定
+  localStorage.setItem(INVENTORY_KEY, JSON.stringify(customStock));
+  alert("在庫を初期化しました");
 }
 
 function getInventory() {
@@ -256,6 +259,15 @@ function showInventory() {
   document.getElementById("inventory-list").innerHTML = `
     <table><thead><tr><th>商品名</th><th>在庫数</th></tr></thead><tbody>${rows}</tbody></table>
   `;
+}
+
+function clearInventory(){
+    if (confirm("すべての在庫データを削除します。よろしいですか？")) {
+    // 保存された在庫情報の削除
+    localStorage.removeItem(INVENTORY_KEY);
+    alert("在庫データを削除しました。");
+    showInventory();  // 在庫一覧を更新（削除後は空）
+  }
 }
 </script>
 </body>
