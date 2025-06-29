@@ -94,7 +94,7 @@
       padding: 0.8rem;
       font-size: 1rem;
       margin: 0.5rem 0;
-      background: #007bff;
+      background: #548fae;
       color: white;
       border: none;
       border-radius: 6px;
@@ -102,7 +102,7 @@
     }
 
     button:hover {
-      background: #0056b3;
+      background: #447a95;
     }
 
     #qrcode {
@@ -133,7 +133,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <h2 id="ticket-title">第2回 俺たちは、芝居がしたい！<br>- 昼の部 -</h2>
+  <h2 id="ticket-title">（イベント名）<br>- 昼の部 -</h2>
 
   <section id="page1">
     <h3>商品選択・数量入力</h3>
@@ -164,14 +164,14 @@
     const GOODS = [
       { id: 1,  name: "入場特典", price:0, bonus:3 },
       { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
-      { id: 3,  name: "上演台本「連星」", price:1500,  bonus:1 },
+      { id: 3,  name: "上演台本「xxx」", price:1500,  bonus:1 },
       { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
-      { id: 5,  name: "「連星」缶バッジセット", price:2000,  bonus:1 },
-      { id: 6,  name: "「連星」缶バッジ単品（アルド）", price:400,  bonus:0 },
-      { id: 7,  name: "「連星」缶バッジ単品（ミラ）", price:400,  bonus:0 },
-      { id: 8,  name: "「連星」缶バッジ単品（シオン）", price:400,  bonus:0 },
-      { id: 9,  name: "「連星」缶バッジ単品（レミアス）", price:400,  bonus:0 },
-      { id:10, name: "「連星」缶バッジ単品（ヴェイル）", price:400,  bonus:0 },
+      { id: 5,  name: "「xxx」缶バッジセット", price:2000,  bonus:1 },
+      { id: 6,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+      { id: 7,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+      { id: 8,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+      { id: 9,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+      { id:10, name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
       { id:11, name: "応援カード単品（1枚）", price:800, bonus:1 },
       { id:12, name: "応援カード単品（3枚・水深ステッカー付）", price:2200, bonus:3 },
       { id:13, name: "応援カード単品（3枚・水深缶バッジ付）", price:2200, bonus:3 },
@@ -196,7 +196,7 @@
         return;
       }
 
-      document.getElementById("ticket-title").innerHTML = `第2回 俺たちは、芝居がしたい！<br>- 昼の部 -<br>チケット番号 : ${ticket}`;
+      document.getElementById("ticket-title").innerHTML = `（イベント名）<br>- 昼の部 -<br>チケット番号 : ${ticket}`;
       stateGoods = GOODS.map(g => ({ ...g, qty: g.id === 1 ? 1 : 0 }));
       const container = document.getElementById("goods-cards");
       container.innerHTML = stateGoods.map(g => {
@@ -244,7 +244,7 @@
         html += `<tr><td>${g.name}</td><td>${g.qty}</td><td>￥${g.price * g.qty}</td><td>${g.bonus * g.qty}</td></tr>`;
       });
       html += `</tbody></table>
-               <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：￥${purchased.reduce((s,g)=>s+g.price*g.qty,0)}</p>
+               <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：${purchased.reduce((s,g)=>s+g.price*g.qty,0)} 円</p>
                <p style="font-weight: bold; font-size: 1.1rem;">応援カード合計：${purchased.reduce((s,g)=>s+g.bonus*g.qty,0)} 枚</p>`;
       document.getElementById("confirm-summary").innerHTML = html;
       document.getElementById("page1").style.display = "none";

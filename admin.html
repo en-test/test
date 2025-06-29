@@ -5,13 +5,86 @@
   <title>物販管理 - 運営用</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: sans-serif; padding: 1em; }
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      background: #f2f2f2;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .section {
+      margin: 1.5em 0;
+      padding: 1em;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .section h2 {
+      font-size: 1.125rem;
+      color: #444;
+      border-left: 6px solid #548fae;
+      padding-left: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .entry {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      margin-bottom: 0.5em;
+      background: #fefefe;
+      border-radius: 4px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 0.5em;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.4em;
+      text-align: center;
+      font-size: 0.85rem; /* ← フォントサイズ小さめに */
+      white-space: nowrap; /* ← 折り返しを防止 */
+    }
+
+    th {
+      background: #f0f0f0;
+      color: #000;
+    }
+
+    tfoot tr th {
+      font-weight: bold;
+    }
+
+    button {
+      background-color: #548fae;
+      color: #fff;
+      border: none;
+      padding: 0.4em 0.8em;
+      border-radius: 4px;
+      margin: 0.3em 0.3em 0.3em 0;
+      cursor: pointer;
+      font-size: 0.9em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.2;  /* 高さの微調整（必要に応じて） */
+
+    }
+
+    button:hover {
+      background-color: #447a95;
+    }
+
     #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
-    .section { margin: 1.5em 0; }
-    .entry { border: 1px solid #ccc; padding: 0.5em; margin-bottom: 0.5em; }
-    table { border-collapse: collapse; width: 100%; margin-top: 0.5em; }
-    th, td { border: 1px solid #ccc; padding: 0.4em; text-align: center; }
-    th { background: #f0f0f0; }
+
   </style>
 </head>
 <body>
@@ -57,14 +130,14 @@
 const GOODS_MASTER = [
   { id: 1,  name: "入場特典", price:0, bonus:3 },
   { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
-  { id: 3,  name: "上演台本「連星」", price:1500,  bonus:1 },
+  { id: 3,  name: "上演台本「xxx」", price:1500,  bonus:1 },
   { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
-  { id: 5,  name: "「連星」缶バッジセット", price:2000,  bonus:1 },
-  { id: 6,  name: "「連星」缶バッジ単品（アルド）", price:400,  bonus:0 },
-  { id: 7,  name: "「連星」缶バッジ単品（ミラ）", price:400,  bonus:0 },
-  { id: 8,  name: "「連星」缶バッジ単品（シオン）", price:400,  bonus:0 },
-  { id: 9,  name: "「連星」缶バッジ単品（レミアス）", price:400,  bonus:0 },
-  { id:10, name: "「連星」缶バッジ単品（ヴェイル）", price:400,  bonus:0 },
+  { id: 5,  name: "「xxx」缶バッジセット", price:2000,  bonus:1 },
+  { id: 6,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+  { id: 7,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+  { id: 8,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+  { id: 9,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
+  { id:10, name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
   { id:11, name: "応援カード単品（1枚）", price:800, bonus:1 },
   { id:12, name: "応援カード単品（3枚・水深ステッカー付）", price:2200, bonus:3 },
   { id:13, name: "応援カード単品（3枚・水深缶バッジ付）", price:2200, bonus:3 },
@@ -152,7 +225,7 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
   reduceInventory(lastScannedData.items);
   alert("保存しました");
-  document.getElementById("scan-result").textContent = "未読み取り";
+  document.getElementById("scan-result").textContent = "";
   lastScannedData = null;
 }
 
