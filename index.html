@@ -8,7 +8,7 @@
     body { font-family: sans-serif; background:#f9f9f9; margin:0; padding:1rem; color:#333; }
     section { max-width:600px; margin:1rem auto; background:white; padding:1rem; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
     h2, h3 { text-align:center; }
-    input[type="number"]{ width:60px; padding:0.3rem; }
+    select { padding:0.3rem; }
     table{ width:100%; border-collapse:collapse; margin-top:1rem;}
     th,td{ border:1px solid #ccc; padding:0.5rem; text-align:center;}
     #totals{ margin:1rem 0; font-weight:bold; text-align:right; }
@@ -22,7 +22,7 @@
 
   <section id="page1">
     <h3>商品選択・数量入力</h3>
-    <div id="totals">合計点数: 0 / 合計金額: 0 円 / 応援カード: 0 枚</div>
+    <div id="totals">合計金額: 0 円 / 応援カード: 0 枚</div>
     <table id="goods-list">
       <thead><tr><th>商品名</th><th>価格</th><th>カード</th><th>数量</th></tr></thead>
       <tbody></tbody>
@@ -43,45 +43,29 @@
   </section>
 
   <script>
-    // シリアル（秘密鍵）→ チケット番号 の対応
     const SERIAL_MAP = {
       "abc123": "A0001",
       "def456": "A0002",
       "ghi789": "A0003",
-      // 必要に応じて追加
     };
 
     const GOODS = [
-      { id: 1,  name: "Tシャツ", price:3000, bonus:1 },
-      { id: 2,  name: "タオル", price:1500, bonus:1 },
-      { id: 3,  name: "缶バッジ", price:500,  bonus:0 },
-      { id: 4,  name: "アクリルキーホルダー", price:800,  bonus:0 },
-      { id: 5,  name: "クリアファイル", price:400,  bonus:0 },
-      { id: 6,  name: "ポスター", price:700,  bonus:0 },
-      { id: 7,  name: "パンフレット", price:1200, bonus:1 },
-      { id: 8,  name: "ステッカー", price:300,  bonus:0 },
-      { id: 9,  name: "スマホスタンド", price:1300, bonus:1 },
-      { id:10, name: "マグカップ", price:1100, bonus:0 },
-      { id:11, name: "ペンライト", price:2500, bonus:1 },
-      { id:12, name: "ネックストラップ", price:600,  bonus:0 },
-      { id:13, name: "ピンズ", price:500,  bonus:0 },
-      { id:14, name: "キャップ", price:1800, bonus:1 },
-      { id:15, name: "リストバンド", price:450,  bonus:0 },
-      { id:16, name: "キーチェーン", price:750,  bonus:0 },
-      { id:17, name: "パーカー", price:4800, bonus:2 },
-      { id:18, name: "ロングTシャツ", price:3500, bonus:1 },
-      { id:19, name: "タペストリー", price:1600, bonus:1 },
-      { id:20, name: "メモ帳", price:350,  bonus:0 },
-      { id:21, name: "缶ケース", price:900,  bonus:0 },
-      { id:22, name: "ショルダーバッグ", price:2800, bonus:1 },
-      { id:23, name: "ノート", price:500,  bonus:0 },
-      { id:24, name: "消しゴム", price:200,  bonus:0 },
-      { id:25, name: "ペンセット", price:1000, bonus:1 },
-      { id:26, name: "うちわ", price:300,  bonus:0 },
-      { id:27, name: "ハンカチ", price:700,  bonus:0 },
-      { id:28, name: "タンブラー", price:2200, bonus:1 },
-      { id:29, name: "ラバーストラップ", price:600,  bonus:0 },
-      { id:30, name: "ステーショナリーセット", price:1500, bonus:1 }
+      { id: 1,  name: "入場特典", price:0, bonus:3 },
+      { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
+      { id: 3,  name: "上演台本「連星」", price:1500,  bonus:1 },
+      { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
+      { id: 5,  name: "「連星」缶バッジセット", price:2000,  bonus:1 },
+      { id: 6,  name: "「連星」缶バッジ単品（アルド）", price:400,  bonus:0 },
+      { id: 7,  name: "「連星」缶バッジ単品（ミラ）", price:400,  bonus:0 },
+      { id: 8,  name: "「連星」缶バッジ単品（シオン）", price:400,  bonus:0 },
+      { id: 9,  name: "「連星」缶バッジ単品（レミアス）", price:400,  bonus:0 },
+      { id:10, name: "「連星」缶バッジ単品（ヴェイル）", price:400,  bonus:0 },
+      { id:11, name: "応援カード単品（1枚）", price:800, bonus:1 },
+      { id:12, name: "応援カード単品（3枚・水深ステッカー付）", price:2200, bonus:3 },
+      { id:13, name: "応援カード単品（3枚・水深缶バッジ付）", price:2200, bonus:3 },
+      { id:14, name: "応援カード単品（5枚・水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
+      { id:15, name: "水深ステッカー", price:300,  bonus:0 },
+      { id:16, name: "水深缶バッジ", price:400,  bonus:0 }
     ];
 
     let serial = "";
@@ -100,18 +84,30 @@
         document.body.innerHTML = `<h2 style='color:red; text-align:center;'>無効なシリアルです。</h2>`;
         return;
       }
-      // チケット番号のみ表示
+
       document.getElementById("ticket-title").innerText = `チケット番号: ${ticket}`;
-      stateGoods = GOODS.map(g => ({...g, qty:0}));
+      stateGoods = GOODS.map(g => ({...g, qty: g.id === 1 ? 1 : 0}));
       const tbody = document.querySelector("#goods-list tbody");
-      tbody.innerHTML = stateGoods.map(g=>`
-        <tr>
-          <td>${g.name}</td>
-          <td>￥${g.price}</td>
-          <td>${g.bonus}</td>
-          <td><input type="number" min="0" value="0" data-id="${g.id}" oninput="onQty(this)" /></td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = stateGoods.map(g => {
+        let options = '';
+        const maxQty = 10;
+        for (let i = 0; i <= maxQty; i++) {
+          const selected = g.qty === i ? 'selected' : '';
+          options += `<option value="${i}" ${selected}>${i}</option>`;
+        }
+        const disabled = g.id === 1 ? 'disabled' : '';
+        return `
+          <tr>
+            <td>${g.name}</td>
+            <td>￥${g.price}</td>
+            <td>${g.bonus}</td>
+            <td>
+              <select data-id="${g.id}" onchange="onQty(this)" ${disabled}>
+                ${options}
+              </select>
+            </td>
+          </tr>`;
+      }).join("");
       updateTotals();
     }
 
@@ -123,11 +119,10 @@
     }
 
     function updateTotals(){
-      const totalQty = stateGoods.reduce((s,g)=>s+g.qty,0);
       const totalPrice = stateGoods.reduce((s,g)=>s+g.price*g.qty,0);
       const totalBonus = stateGoods.reduce((s,g)=>s+g.bonus*g.qty,0);
       document.getElementById("totals").innerText = 
-        `合計点数: ${totalQty} / 合計金額: ${totalPrice} 円 / 応援カード: ${totalBonus} 枚`;
+        `合計金額: ${totalPrice} 円 / 応援カード: ${totalBonus} 枚`;
     }
 
     function toConfirm(){
@@ -168,7 +163,6 @@
       const totalBonus = purchased.reduce((s,g)=>{
         const obj = GOODS.find(x=>x.id===g.id); return s + obj.bonus * g.qty;
       },0);
-      // QRコードに含めるのはチケット番号＋購入情報のみ
       const payload = { ticket, goods:purchased, totalQty, totalPrice, totalBonus };
       const txt = JSON.stringify(payload);
       const qrDiv = document.getElementById("qrcode");
