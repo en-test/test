@@ -230,7 +230,7 @@
       const totalPrice = stateGoods.reduce((s, g) => s + g.price * g.qty, 0);
       const totalBonus = stateGoods.reduce((s, g) => s + g.bonus * g.qty, 0);
       document.getElementById("totals").innerText = 
-        `合計金額: ${totalPrice} 円 / 応援カード: ${totalBonus} 枚`;
+        `合計金額：${totalPrice} 円 / 応援カード：${totalBonus} 枚`;
     }
 
     function toConfirm() {
