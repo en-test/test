@@ -55,36 +55,22 @@
 
 <script>
 const GOODS_MASTER = [
-  { id: 1, name: "Tシャツ", price: 3000, bonus: 1 },
-  { id: 2, name: "タオル", price: 1500, bonus: 1 },
-  { id: 3, name: "缶バッジ", price: 500, bonus: 0 },
-  { id: 4, name: "アクリルキーホルダー", price: 800, bonus: 0 },
-  { id: 5, name: "クリアファイル", price: 400, bonus: 0 },
-  { id: 6, name: "ポスター", price: 700, bonus: 0 },
-  { id: 7, name: "パンフレット", price: 1200, bonus: 1 },
-  { id: 8, name: "ステッカー", price: 300, bonus: 0 },
-  { id: 9, name: "スマホスタンド", price: 1300, bonus: 1 },
-  { id:10, name: "マグカップ", price: 1100, bonus: 0 },
-  { id:11, name: "ペンライト", price: 2500, bonus: 1 },
-  { id:12, name: "ネックストラップ", price: 600, bonus: 0 },
-  { id:13, name: "ピンズ", price: 500, bonus: 0 },
-  { id:14, name: "キャップ", price: 1800, bonus: 1 },
-  { id:15, name: "リストバンド", price: 450, bonus: 0 },
-  { id:16, name: "キーチェーン", price: 750, bonus: 0 },
-  { id:17, name: "パーカー", price: 4800, bonus: 2 },
-  { id:18, name: "ロングTシャツ", price: 3500, bonus: 1 },
-  { id:19, name: "タペストリー", price: 1600, bonus: 1 },
-  { id:20, name: "メモ帳", price: 350, bonus: 0 },
-  { id:21, name: "缶ケース", price: 900, bonus: 0 },
-  { id:22, name: "ショルダーバッグ", price: 2800, bonus: 1 },
-  { id:23, name: "ノート", price: 500, bonus: 0 },
-  { id:24, name: "消しゴム", price: 200, bonus: 0 },
-  { id:25, name: "ペンセット", price: 1000, bonus: 1 },
-  { id:26, name: "うちわ", price: 300, bonus: 0 },
-  { id:27, name: "ハンカチ", price: 700, bonus: 0 },
-  { id:28, name: "タンブラー", price: 2200, bonus: 1 },
-  { id:29, name: "ラバーストラップ", price: 600, bonus: 0 },
-  { id:30, name: "ステーショナリーセット", price: 1500, bonus: 1 }
+  { id: 1,  name: "入場特典", price:0, bonus:3 },
+  { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
+  { id: 3,  name: "上演台本「連星」", price:1500,  bonus:1 },
+  { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
+  { id: 5,  name: "「連星」缶バッジセット", price:2000,  bonus:1 },
+  { id: 6,  name: "「連星」缶バッジ単品（アルド）", price:400,  bonus:0 },
+  { id: 7,  name: "「連星」缶バッジ単品（ミラ）", price:400,  bonus:0 },
+  { id: 8,  name: "「連星」缶バッジ単品（シオン）", price:400,  bonus:0 },
+  { id: 9,  name: "「連星」缶バッジ単品（レミアス）", price:400,  bonus:0 },
+  { id:10, name: "「連星」缶バッジ単品（ヴェイル）", price:400,  bonus:0 },
+  { id:11, name: "応援カード単品（1枚）", price:800, bonus:1 },
+  { id:12, name: "応援カード単品（3枚・水深ステッカー付）", price:2200, bonus:3 },
+  { id:13, name: "応援カード単品（3枚・水深缶バッジ付）", price:2200, bonus:3 },
+  { id:14, name: "応援カード単品（5枚・水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
+  { id:15, name: "水深ステッカー", price:300,  bonus:0 },
+  { id:16, name: "水深缶バッジ", price:400,  bonus:0 }
 ];
 
 const STORAGE_KEY = "purchases";
@@ -98,11 +84,7 @@ const customStock = [
   { id: 7, stock: 40 }, { id: 8, stock: 80 }, { id: 9, stock: 20 },
   { id: 10, stock: 55 }, { id: 11, stock: 25 }, { id: 12, stock: 35 },
   { id: 13, stock: 45 }, { id: 14, stock: 65 }, { id: 15, stock: 75 },
-  { id: 16, stock: 85 }, { id: 17, stock: 95 }, { id: 18, stock: 15 },
-  { id: 19, stock: 10 }, { id: 20, stock: 5 }, { id: 21, stock: 60 },
-  { id: 22, stock: 70 }, { id: 23, stock: 80 }, { id: 24, stock: 90 },
-  { id: 25, stock: 100 }, { id: 26, stock: 110 }, { id: 27, stock: 120 },
-  { id: 28, stock: 130 }, { id: 29, stock: 140 }, { id: 30, stock: 150 }
+  { id: 16, stock: 85 }
 ];
 
 window.onload = function() {
