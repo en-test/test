@@ -76,6 +76,14 @@
       white-space: nowrap; /* ← 折り返しを防止 */
     }
 
+    .item-name{
+      border: 1px solid #ccc;
+      padding: 0.4rem 0.3rem;
+      text-align: center;
+      font-size: 0.85rem; /* ← フォントサイズ小さめに */
+      white-space: normal; /* ← 折り返しあり */
+    }
+
     select {
       width: 100%;
       padding: 0.4rem;
@@ -172,10 +180,10 @@
       { id: 8,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
       { id: 9,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
       { id:10, name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id:11, name: "応援カード単品（1枚）", price:800, bonus:1 },
-      { id:12, name: "応援カード単品（3枚・水深ステッカー付）", price:2200, bonus:3 },
-      { id:13, name: "応援カード単品（3枚・水深缶バッジ付）", price:2200, bonus:3 },
-      { id:14, name: "応援カード単品（5枚・水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
+      { id:11, name: "応援カード1枚", price:800, bonus:1 },
+      { id:12, name: "応援カード3枚（水深ステッカー付）", price:2200, bonus:3 },
+      { id:13, name: "応援カード3枚（水深缶バッジ付）", price:2200, bonus:3 },
+      { id:14, name: "応援カード5枚（水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
       { id:15, name: "水深ステッカー", price:300,  bonus:0 },
       { id:16, name: "水深缶バッジ", price:400,  bonus:0 }
     ];
@@ -241,7 +249,7 @@
       }
       let html = `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
       purchased.forEach(g => {
-        html += `<tr><td>${g.name}</td><td>${g.qty}</td><td>￥${g.price * g.qty}</td><td>${g.bonus * g.qty}</td></tr>`;
+        html += `<tr><td class="item-name">${g.name}</td><td>${g.qty}</td><td>￥${g.price * g.qty}</td><td>${g.bonus * g.qty}</td></tr>`;
       });
       html += `</tbody></table>
                <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：${purchased.reduce((s,g)=>s+g.price*g.qty,0)} 円</p>
