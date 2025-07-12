@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>在庫管理ページ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      background: #f0f0f0;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 1em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1em;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1em;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.3s ease;
+    }
+
+    .card.modified {
+      background-color: #fff8dc; /* 薄い黄色 */
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      margin-bottom: 0.5em;
+      color: #444;
+    }
+
+    .card select {
+      width: 100%;
+      padding: 0.4em;
+      font-size: 0.95em;
+      margin-top: 0.3em;
+    }
+
+    button {
+      margin-bottom: 1.5em;
+      padding: 0.6em 1.2em;
+      background-color: #548fae;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #save-all:hover {
+      background-color: #447a95;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>在庫管理</h1>
+  <!-- 在庫データ更新ボタン -->
+  <button id="save-all" onclick="saveAll()">在庫を更新する</button>
+  <!-- 在庫データクリアボタン -->
+  <button onclick="clearInventory()">在庫データをクリア</button>
+
+  <div class="grid" id="inventory-list"></div>
+
+  <script>
+    const INVENTORY_KEY = "inventory";
+    const GOODS_MASTER = [
+      { id: 1, name: "入場特典" }, { id: 2, name: "商品1" }, { id: 3, name: "商品2" },
+      { id: 4, name: "商品3" }, { id: 5, name: "商品4" }, { id: 6, name: "商品5" },
+      { id: 7, name: "商品6" }, { id: 8, name: "商品7" }, { id: 9, name: "商品8" },
+      { id:10, name: "商品9" }, { id:11, name: "商品10"}, { id:12, name: "商品11"},
+      { id:13, name: "商品12"}, { id:14, name: "商品13"}, { id:15, name: "商品14"},
+      { id:16, name: "商品15"}
+    ];
+
+    function getInventory() {
+      return JSON.parse(localStorage.getItem(INVENTORY_KEY) || "[]");
+    }
+
+    function saveInventory(data) {
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(data));
+    }
+
+    function renderCards() {
+      const inventory = getInventory();
+      const listEl = document.getElementById("inventory-list");
+      listEl.innerHTML = GOODS_MASTER.map(g => {
+        const inv = inventory.find(i => i.id === g.id);
+        const stock = inv ? inv.stock : 0;
+
+        // 選択肢生成（0〜100）
+        let options = "";
+        for (let i = 0; i <= 100; i++) {
+          options += `<option value="${i}" ${i === stock ? "selected" : ""}>${i}</option>`;
+        }
+
+        return `
+          <div class="card" id="card-${g.id}">
+            <h2>${g.name}</h2>
+            <select id="stock-select-${g.id}" onchange="markModified(${g.id})">
+              ${options}
+            </select>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function markModified(id) {
+      const card = document.getElementById(`card-${id}`);
+      card.classList.add("modified");
+    }
+
+    function saveAll() {
+      const newInventory = GOODS_MASTER.map(g => {
+        const select = document.getElementById(`stock-select-${g.id}`);
+        return { id: g.id, stock: parseInt(select.value, 10) };
+      });
+
+      saveInventory(newInventory);
+
+      // 色リセット
+      GOODS_MASTER.forEach(g => {
+        const card = document.getElementById(`card-${g.id}`);
+        card.classList.remove("modified");
+      });
+
+      alert("在庫を更新しました");
+    }
+
+    function clearInventory(){
+    if (confirm("すべての在庫データを削除します。よろしいですか？")) {
+      localStorage.removeItem(INVENTORY_KEY);
+      alert("在庫データを削除しました。");
+      renderCards();
+    }
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>

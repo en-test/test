@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>購入データ一覧</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; background: #f9f9f9; }
+    h1 { color: #333; }
+    .entry {
+      border: 1px solid #ccc;
+      margin: 1em 0;
+      padding: 1em;
+      background: #fff;
+      border-radius: 6px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 0.4em;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    th { background: #e6e6e6; }
+
+    button {
+      background-color: #548fae;
+      color: #fff;
+      border: none;
+      padding: 0.5em 1em;
+      border-radius: 4px;
+      font-size: 0.9em;
+      cursor: pointer;
+      margin-bottom: 1em;
+    }
+    button:hover {
+      background-color: #447a95;
+    }
+  </style>
+</head>
+<body>
+  <h1>購入データ一覧</h1>
+
+  <!-- CSV出力ボタン -->
+  <button onclick="exportCSV()">CSVでダウンロード</button>
+  <!-- 購入データクリアボタン -->
+  <button onclick="clearStorage()">購入データをクリア</button>
+
+  <div id="data-list"></div>
+
+  <script>
+    const STORAGE_KEY = "purchases";
+    const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const c = document.getElementById("data-list");
+
+    if (arr.length === 0) {
+      c.innerHTML = "<p>保存データはありません</p>";
+    } else {
+      c.innerHTML = arr.map(d => {
+        const rows = d.items.map(i => {
+          const amt = i.price * i.qty;
+          const bonusAmount = i.bonus * i.qty;
+          return `<tr><td>${i.name}</td><td>${i.qty}</td><td>￥${i.price}</td><td>￥${amt}</td><td>${bonusAmount}枚</td></tr>`;
+        }).join("");
+        return `
+          <div class="entry">
+            <strong>${d.ticket}　金額合計：¥${d.totalPrice}　応援カード枚数合計：${d.totalBonus}枚</strong>
+            <table>
+              <thead><tr><th>商品</th><th>数量</th><th>単価</th><th>小計</th><th>応援カード</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }).join("");
+    }
+
+    // CSV出力関数
+    function exportCSV() {
+      if (arr.length === 0) return alert("保存データはありません");
+      let csv = "チケット番号,商品名,価格,購入数,小計,応援カード枚数\n";
+      arr.forEach(d => {
+        d.items.forEach(i => {
+          csv += [d.ticket, i.name, i.price, i.qty, i.price * i.qty, i.bonus * i.qty].join(",") + "\n";
+        });
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "purchases.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+  // ストレージに入っている購入データを削除する
+  function clearStorage() {
+    if (confirm("すべての購入データを削除します。よろしいですか？")) {
+      localStorage.removeItem(STORAGE_KEY);
+      alert("購入データを削除しました。");
+      document.getElementById("data-list").innerHTML = "";
+    }
+  }
+  </script>
+</body>
+</html>

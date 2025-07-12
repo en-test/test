@@ -141,7 +141,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <h2 id="ticket-title">（イベント名）<br>- 昼の部 -</h2>
+  <h2 id="event-title">（イベント名）<br>- 昼の部 -</h2>
 
   <section id="page1">
     <h3>商品選択・数量入力</h3>
@@ -163,48 +163,39 @@
   </section>
 
   <script>
-    const SERIAL_MAP = {
-      "abc123xyz": "A0001",
-      "def456xyz": "A0002",
-      "ghi789xyz": "A0003",
-    };
+
+    const ALLOWED_SERIALS = ["abc123xyz"];
 
     const GOODS = [
       { id: 1,  name: "入場特典", price:0, bonus:3 },
-      { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
-      { id: 3,  name: "上演台本「xxx」", price:1500,  bonus:1 },
-      { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
-      { id: 5,  name: "「xxx」缶バッジセット", price:2000,  bonus:1 },
-      { id: 6,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id: 7,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id: 8,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id: 9,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id:10, name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-      { id:11, name: "応援カード1枚", price:800, bonus:1 },
-      { id:12, name: "応援カード3枚（水深ステッカー付）", price:2200, bonus:3 },
-      { id:13, name: "応援カード3枚（水深缶バッジ付）", price:2200, bonus:3 },
-      { id:14, name: "応援カード5枚（水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
-      { id:15, name: "水深ステッカー", price:300,  bonus:0 },
-      { id:16, name: "水深缶バッジ", price:400,  bonus:0 }
+      { id: 2,  name: "商品1", price:2500, bonus:2 },
+      { id: 3,  name: "商品2", price:1500,  bonus:1 },
+      { id: 4,  name: "商品3", price:1000,  bonus:1 },
+      { id: 5,  name: "商品4", price:2000,  bonus:1 },
+      { id: 6,  name: "商品5", price:400,  bonus:0 },
+      { id: 7,  name: "商品6", price:400,  bonus:0 },
+      { id: 8,  name: "商品7", price:400,  bonus:0 },
+      { id: 9,  name: "商品8", price:400,  bonus:0 },
+      { id:10, name: "商品9", price:400,  bonus:0 },
+      { id:11, name: "商品10", price:800, bonus:1 },
+      { id:12, name: "商品11", price:2200, bonus:3 },
+      { id:13, name: "商品12", price:2200, bonus:3 },
+      { id:14, name: "商品13", price:3500, bonus:5 },
+      { id:15, name: "商品14", price:300,  bonus:0 },
+      { id:16, name: "商品15", price:400,  bonus:0 }
     ];
 
-    let serial = "", ticket = "", stateGoods = [];
+    let serial = "", stateGoods = [];
 
     function init() {
       const params = new URLSearchParams(location.search);
-      serial = params.get("serial");
-      if (!serial) {
-        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>シリアルがありません。</h2>";
+      const serial = params.get("serial");
+      const ALLOWED_SERIALS = ["abc123xyz"];
+      if (!serial || !ALLOWED_SERIALS.includes(serial)) {
+        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>無効なアクセスです。</h2>";
         return;
       }
-
-      ticket = SERIAL_MAP[serial];
-      if (!ticket) {
-        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>無効なシリアルです。</h2>";
-        return;
-      }
-
-      document.getElementById("ticket-title").innerHTML = `（イベント名）<br>- 昼の部 -<br>チケット番号 : ${ticket}`;
+      document.getElementById("event-title").innerHTML = `（イベント名）<br>- 昼の部 -`;
       stateGoods = GOODS.map(g => ({ ...g, qty: g.id === 1 ? 1 : 0 }));
       const container = document.getElementById("goods-cards");
       container.innerHTML = stateGoods.map(g => {
@@ -275,7 +266,7 @@
       const totalBonus = purchased.reduce((s, g) => {
         const obj = GOODS.find(x => x.id === g.id); return s + obj.bonus * g.qty;
       }, 0);
-      const payload = { ticket, goods: purchased, totalPrice, totalBonus };
+      const payload = { goods: purchased, totalPrice, totalBonus };
       const qrDiv = document.getElementById("qrcode");
       qrDiv.innerHTML = "";
       new QRCode(qrDiv, { text: JSON.stringify(payload), width: 256, height: 256 });

@@ -93,6 +93,8 @@
 
   <div class="section">
     <h2>① QRコード読み取り</h2>
+    <input type="text" id="ticket-input" oninput="checkTicketDuplication()" placeholder="チケット番号" style="margin: 0.5em 0; padding: 0.4em;" />
+    <p id="ticket-warning" style="color: red; font-weight: bold;"></p>
     <div id="reader"></div>
     <button onclick="startScan()">スキャン開始</button>
     <button onclick="stopScan()">スキャン停止</button>
@@ -104,46 +106,32 @@
     <button onclick="saveData()">保存する</button>
   </div>
 
-  <div class="section">
-    <h2>③ 購入データ一覧</h2>
-    <button onclick="showData()">購入データ一覧を表示</button>
-    <button onclick="hideData()">購入データ一覧を非表示</button>
-    <button onclick="exportCSV()">CSVでダウンロード</button>
-    <div id="data-list"></div>
-  </div>
+  <a href="purchases.html" target="_blank">
+  <button>購入データ一覧（別ページ）</button>
+  </a>
 
-  <div class="section">
-    <h2>④ 在庫一覧</h2>
-    <button onclick="showInventory()">在庫一覧を表示</button>
-    <button onclick="hideInventory()">在庫一覧を非表示</button>
-    <button onclick="initInventory()">在庫リセット</button>
-    <div id="inventory-list"></div>
-  </div>
-
-  <div class="section">
-    <h2>⑤ 保存データ削除</h2>
-    <button onclick="clearStorage()">購入データをクリア</button>
-    <button onclick="clearInventory()">在庫データをクリア</button>
-  </div>
+  <a href="inventory.html" target="_blank">
+  <button>在庫管理ページ（別ページ）</button>
+  </a>
 
 <script>
 const GOODS_MASTER = [
   { id: 1,  name: "入場特典", price:0, bonus:3 },
-  { id: 2,  name: "公演音声DLカード", price:2500, bonus:2 },
-  { id: 3,  name: "上演台本「xxx」", price:1500,  bonus:1 },
-  { id: 4,  name: "ランダムブロマイド", price:1000,  bonus:1 },
-  { id: 5,  name: "「xxx」缶バッジセット", price:2000,  bonus:1 },
-  { id: 6,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-  { id: 7,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-  { id: 8,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-  { id: 9,  name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-  { id:10, name: "「xxx」缶バッジ単品（xxx）", price:400,  bonus:0 },
-  { id:11, name: "応援カード1枚", price:800, bonus:1 },
-  { id:12, name: "応援カード3枚（水深ステッカー付）", price:2200, bonus:3 },
-  { id:13, name: "応援カード3枚（水深缶バッジ付）", price:2200, bonus:3 },
-  { id:14, name: "応援カード5枚（水深ステッカー＆缶バッジ付）", price:3500, bonus:5 },
-  { id:15, name: "水深ステッカー", price:300,  bonus:0 },
-  { id:16, name: "水深缶バッジ", price:400,  bonus:0 }
+  { id: 2,  name: "商品1", price:2500, bonus:2 },
+  { id: 3,  name: "商品2", price:1500,  bonus:1 },
+  { id: 4,  name: "商品3", price:1000,  bonus:1 },
+  { id: 5,  name: "商品4", price:2000,  bonus:1 },
+  { id: 6,  name: "商品5", price:400,  bonus:0 },
+  { id: 7,  name: "商品6", price:400,  bonus:0 },
+  { id: 8,  name: "商品7", price:400,  bonus:0 },
+  { id: 9,  name: "商品8", price:400,  bonus:0 },
+  { id:10, name: "商品9", price:400,  bonus:0 },
+  { id:11, name: "商品10", price:800, bonus:1 },
+  { id:12, name: "商品11", price:2200, bonus:3 },
+  { id:13, name: "商品12", price:2200, bonus:3 },
+  { id:14, name: "商品13", price:3500, bonus:5 },
+  { id:15, name: "商品14", price:300,  bonus:0 },
+  { id:16, name: "商品15", price:400,  bonus:0 }
 ];
 
 const STORAGE_KEY = "purchases";
@@ -167,6 +155,23 @@ window.onload = function() {
   }
 }
 
+function checkTicketDuplication() {
+  const ticket = document.getElementById("ticket-input").value.trim();
+  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  const warning = document.getElementById("ticket-warning");
+
+  if (ticket === "") {
+    warning.textContent = "チケット番号が未入力です";
+    return;
+  }
+
+  if (existing.some(d => d.ticket === ticket)) {
+    warning.textContent = "このチケット番号はすでに購入登録済みです";
+  } else {
+    warning.textContent = "";
+  }
+}
+
 function startScan() {
   if (qrScanner) return;
   qrScanner = new Html5Qrcode("reader");
@@ -174,6 +179,7 @@ function startScan() {
     decodedText => {
       try {
         const data = JSON.parse(decodedText);
+        data.ticket = document.getElementById("ticket-input").value.trim();
         data.items = (data.goods || []).map(item => {
           const m = GOODS_MASTER.find(g => g.id === item.id) || {};
           return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
@@ -220,15 +226,29 @@ function displayScanResult(d) {
       金額合計：${totalPrice} 円<br>
       応援カード合計：${totalBonus} 枚
     </p>
+    <div style="margin-top: 1rem;">
+      <label>預かり金額：<input type="number" id="payment-input" style="width: 100px;" /></label>
+      <p id="change-result" style="font-weight: bold;"></p>
+    </div>
   `;
+
+  const paymentInput = document.getElementById("payment-input");
+  const changeResult = document.getElementById("change-result");
+
+  paymentInput.addEventListener("input", () => {
+    const payment = parseInt(paymentInput.value, 10);
+    if (isNaN(payment)) {
+      changeResult.textContent = "";
+    } else {
+      const change = payment - totalPrice;
+      changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+    }
+  });
 }
 
 function saveData() {
   if (!lastScannedData) return alert("QRを読み取ってください");
   const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  if (arr.some(e => e.ticket === lastScannedData.ticket)) {
-    return alert("既に保存済みです");
-  }
   if (!isStockSufficient(lastScannedData.items)) {
     return alert("在庫が不足している商品があります。保存できません。");
   }
@@ -238,54 +258,6 @@ function saveData() {
   alert("保存しました");
   document.getElementById("scan-result").textContent = "";
   lastScannedData = null;
-}
-
-function showData() {
-  const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  const c = document.getElementById("data-list");
-  if (arr.length === 0) return c.innerHTML = "<p>保存データはありません</p>";
-  c.innerHTML = arr.map(d => {
-    const rows = d.items.map(i => {
-      const amt = i.price * i.qty;
-      return `<tr><td>${i.name}</td><td>${i.qty}</td><td>￥${i.price}</td><td>￥${amt}</td></tr>`;
-    }).join("");
-    return `
-      <div class="entry">
-        <strong>チケット: ${d.ticket}</strong>
-        <table>
-          <thead><tr><th>商品</th><th>数量</th><th>単価</th><th>小計</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-  }).join("");
-}
-
-function hideData() {
-  document.getElementById("data-list").innerHTML = "";
-}
-
-function exportCSV() {
-  const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  if (arr.length === 0) return alert("保存データはありません");
-  let csv = "ticket,id,name,price,qty,sub,bonus\n";
-  arr.forEach(d => {
-    d.items.forEach(i => {
-      csv += [d.ticket, i.id, i.name, i.price, i.qty, i.price*i.qty, i.bonus*i.qty].join(",") + "\n";
-    });
-  });
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "purchases.csv"; a.click();
-  URL.revokeObjectURL(url);
-}
-
-function clearStorage() {
-  if (confirm("すべての購入データを削除します。よろしいですか？")) {
-    localStorage.removeItem(STORAGE_KEY);
-    alert("購入データを削除しました。");
-    document.getElementById("data-list").innerHTML = "";
-  }
 }
 
 function initInventory() {
@@ -321,30 +293,6 @@ function reduceInventory(items) {
   localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
 }
 
-function showInventory() {
-  const inventory = getInventory();
-  const rows = GOODS_MASTER.map(g => {
-    const inv = inventory.find(i => i.id === g.id);
-    const stock = inv ? inv.stock : "-";
-    return `<tr><td>${g.name}</td><td>${stock}</td></tr>`;
-  }).join("");
-  document.getElementById("inventory-list").innerHTML = `
-    <table><thead><tr><th>商品名</th><th>在庫数</th></tr></thead><tbody>${rows}</tbody></table>
-  `;
-}
-
-function hideInventory() {
-  document.getElementById("inventory-list").innerHTML = "";
-}
-
-function clearInventory(){
-    if (confirm("すべての在庫データを削除します。よろしいですか？")) {
-    // 保存された在庫情報の削除
-    localStorage.removeItem(INVENTORY_KEY);
-    alert("在庫データを削除しました。");
-    showInventory();  // 在庫一覧を更新（削除後は空）
-  }
-}
 </script>
 </body>
 </html>
