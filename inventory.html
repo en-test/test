@@ -12,7 +12,6 @@
 
     h1 {
       color: #333;
-      margin-bottom: 1em;
     }
 
     .grid {
@@ -37,6 +36,7 @@
 
     .card h2 {
       font-size: 1rem;
+      margin-top: auto;
       margin-bottom: 0.5em;
       color: #444;
     }
@@ -48,18 +48,20 @@
       margin-top: 0.3em;
     }
 
-    button {
-      margin-bottom: 1.5em;
-      padding: 0.6em 1.2em;
+    .btn-link {
+      display: inline-block;
       background-color: #548fae;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
+      color: #fff;
+      padding: 0.3em 0.8em;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
       cursor: pointer;
+      border: none;
+      margin-bottom: 0.8em;
     }
 
-    #save-all:hover {
+    .btn-link:hover {
       background-color: #447a95;
     }
   </style>
@@ -68,9 +70,11 @@
 
   <h1>在庫管理</h1>
   <!-- 在庫データ更新ボタン -->
-  <button id="save-all" onclick="saveAll()">在庫を更新する</button>
+  <button class="btn-link" onclick="saveAll()">在庫を更新する</button>
   <!-- 在庫データクリアボタン -->
-  <button onclick="clearInventory()">在庫データをクリア</button>
+  <button class="btn-link" onclick="clearInventory()">在庫データをクリア</button>
+  <!-- 戻るボタン -->
+  <a href="admin.html" target="_blank" class="btn-link">物販受付ページに戻る</a>
 
   <div class="grid" id="inventory-list"></div>
 

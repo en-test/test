@@ -25,17 +25,19 @@
     }
     th { background: #e6e6e6; }
 
-    button {
+    .btn-link {
+      display: inline-block;
       background-color: #548fae;
       color: #fff;
-      border: none;
-      padding: 0.5em 1em;
+      padding: 0.3em 0.8em;
+      text-decoration: none;
       border-radius: 4px;
-      font-size: 0.9em;
+      font-size: 0.9rem;
       cursor: pointer;
-      margin-bottom: 1em;
+      border: none;
     }
-    button:hover {
+
+    .btn-link:hover {
       background-color: #447a95;
     }
   </style>
@@ -44,9 +46,11 @@
   <h1>購入データ一覧</h1>
 
   <!-- CSV出力ボタン -->
-  <button onclick="exportCSV()">CSVでダウンロード</button>
+  <button class="btn-link" onclick="exportCSV()">CSVでダウンロード</button>
   <!-- 購入データクリアボタン -->
-  <button onclick="clearStorage()">購入データをクリア</button>
+  <button class="btn-link" onclick="clearStorage()">購入データをクリア</button>
+  <!-- 戻るボタン -->
+  <a href="admin.html" target="_blank" class="btn-link">物販受付ページに戻る</a>
 
   <div id="data-list"></div>
 
