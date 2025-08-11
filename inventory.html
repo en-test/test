@@ -10,14 +10,19 @@
       background: #f0f0f0;
     }
 
-    h1 {
-      color: #333;
-    }
-
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1em;
+    }
+
+    .section {
+      margin: 1.5em 0;
+      padding: 1em;
+      background: #e0e0e0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
 
     .card {
@@ -49,26 +54,39 @@
     }
 
     .btn-link {
-      display: inline-block;
-      background-color: #548fae;
-      color: #fff;
-      padding: 0.3em 0.8em;
-      text-decoration: none;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
+      background-color: #bdd4e6; 
+      color: #333;
       border: none;
-      margin-bottom: 0.8em;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
+      margin: 0.3em 0.3em 0.3em 0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
     }
 
     .btn-link:hover {
-      background-color: #447a95;
+      background-color: #aac7df;  /* hover時 */
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-link:active {
+      background-color: #95bad8;  /* active時 */
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-link:focus {
+       outline: 2px solid #88b0d1;
+      outline-offset: 2px;
     }
   </style>
 </head>
 <body>
 
-  <h1>在庫管理</h1>
   <!-- 在庫データ更新ボタン -->
   <button class="btn-link" onclick="saveAll()">在庫を更新する</button>
   <!-- 在庫データクリアボタン -->
@@ -76,7 +94,9 @@
   <!-- 戻るボタン -->
   <a href="admin.html" target="_blank" class="btn-link">物販受付ページに戻る</a>
 
+  <div class="section">
   <div class="grid" id="inventory-list"></div>
+  </div>
 
   <script>
     const INVENTORY_KEY = "inventory";

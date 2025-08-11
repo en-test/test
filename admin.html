@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>物販管理 - 運営用</title>
+  <title>物販受付ページ</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -18,14 +18,6 @@
       border: 1px solid #ddd;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-
-    .section h1 {
-      font-size: 1.125rem;
-      color: #444;
-      border-left: 6px solid #548fae;
-      padding-left: 0.5em;
-      margin-bottom: 0.5em;
     }
 
     .entry {
@@ -61,36 +53,87 @@
 
     .btn-link {
       display: inline-block;
-      background-color: #548fae;
-      color: #fff;
-      padding: 0.3em 0.8em;
+      background-color: #bdd4e6;
+      color: #333;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
+      font-size: 0.95em;
+      font-weight: bold;
       text-decoration: none;
-      border-radius: 4px;
-      font-size: 0.9rem;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
     }
 
     .btn-link:hover {
-      background-color: #447a95;
+      background-color: #aac7df;  /* hover時 */
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-link:active {
+      background-color: #95bad8;  /* active時 */
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-link:focus {
+       outline: 2px solid #88b0d1;
+      outline-offset: 2px;
+    }
+
+    .input-scan-wrap{
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin: 0.5em 0;
+    }
+
+    .ticket-input {
+      flex: 1;
+      padding: 0.6em 1em;
+      font-size: 0.95em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     button {
-      background-color: #548fae;
-      color: #fff;
+      background-color: #bdd4e6; 
+      color: #333;
       border: none;
-      padding: 0.4em 0.8em;
-      border-radius: 4px;
+      padding: 0.6em 1.2em;
+      border-radius: 6px;
       margin: 0.3em 0.3em 0.3em 0;
       cursor: pointer;
-      font-size: 0.9em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1.2;
+      font-size: 0.95em;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
     }
 
     button:hover {
-      background-color: #447a95;
+      background-color: #aac7df;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      background-color: #95bad8;
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    button:focus {
+      outline: 2px solid #88b0d1;
+      outline-offset: 2px;
+    }
+
+    .btn-disabled {
+      background-color: #ddd !important;
+      color: #888 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
     }
 
     #reader { width: 100%; max-width: 400px; margin-bottom: 1em; }
@@ -99,26 +142,18 @@
 </head>
 <body>
 
-  <a href="purchases.html" target="_blank" class="btn-link">購入データ一覧（別ページ）</a>
-  <a href="inventory.html" target="_blank" class="btn-link">在庫管理ページ（別ページ）</a>
+  <a href="purchases.html" target="_blank" class="btn-link">購入データ一覧🔗</a>
+  <a href="inventory.html" target="_blank" class="btn-link">在庫管理ページ🔗</a>
 
   <div class="section">
-    <h1>チケット番号入力</h1>
-    <input type="text" id="ticket-input" oninput="checkTicketDuplication()" placeholder="チケット番号" style="margin: 0.5em 0; padding: 0.4em;" />
+    <div class="input-scan-wrap">
+      <input type="text" id="ticket-input" class="ticket-input" oninput="checkTicketDuplication()" placeholder="チケット番号"/>
+      <button id="toggle-scan-btn" onclick="toggleScan()" disabled class="btn-disabled">スキャン開始</button>
+    </div>
     <p id="ticket-warning" style="color: red; font-weight: bold;"></p>
-  </div>
-
-  <div class="section">
-    <h1>QRコード読み取り</h1>
-    <div id="reader"></div>
-    <button onclick="startScan()">スキャン開始</button>
-    <button onclick="stopScan()">スキャン停止</button>
-  </div>
-
-  <div class="section">
-    <h1>購入リスト</h1>
-    <div id="scan-result"></div>
-    <button onclick="saveData()">保存する</button>
+    <div id="reader" style="margin-top: 1em;"></div>
+    <div id="scan-result" style="margin-top: 1em;"></div>
+    <button onclick="saveData()">保存</button>
   </div>
 
 <script>
@@ -166,72 +201,117 @@ function checkTicketDuplication() {
   const ticket = document.getElementById("ticket-input").value.trim();
   const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
   const warning = document.getElementById("ticket-warning");
+  const scanButton = document.getElementById("toggle-scan-btn");
 
   if (ticket === "") {
     warning.textContent = "チケット番号が未入力です";
+    scanButton.disabled = true;  // ボタン無効化
+    scanButton.classList.add("btn-disabled");
     return;
   }
 
   if (existing.some(d => d.ticket === ticket)) {
     warning.textContent = "このチケット番号はすでに購入登録済みです";
+    scanButton.disabled = false;  // ボタン有効化
+    scanButton.classList.remove("btn-disabled");
   } else {
     warning.textContent = "";
+    scanButton.disabled = false;  // ボタン有効化
+    scanButton.classList.remove("btn-disabled");
   }
 }
 
-function startScan() {
-  if (qrScanner) return;
-  qrScanner = new Html5Qrcode("reader");
-  qrScanner.start({ facingMode:"environment" }, { fps:10, qrbox:250 },
-    decodedText => {
-      try {
-        const data = JSON.parse(decodedText);
-        data.ticket = document.getElementById("ticket-input").value.trim();
-        data.items = (data.goods || []).map(item => {
-          const m = GOODS_MASTER.find(g => g.id === item.id) || {};
-          return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
-        });
-        lastScannedData = data;
-        displayScanResult(data);
-        stopScan();
-      } catch(e) {
-        document.getElementById("scan-result").textContent = "読み取り失敗";
-      }
-    }
-  ).catch(err => alert("カメラ起動失敗：" + err));
-}
-
-function stopScan() {
+function toggleScan() {
+  const button = document.getElementById("toggle-scan-btn");
   if (qrScanner) {
-    qrScanner.stop().then(() => { qrScanner.clear(); qrScanner = null; });
+    // 停止処理
+    qrScanner.stop().then(() => {
+      qrScanner.clear();
+      qrScanner = null;
+      button.textContent = "スキャン開始";
+    });
+  } else {
+    // 開始処理
+    qrScanner = new Html5Qrcode("reader");
+    qrScanner.start({ facingMode:"environment" }, { fps:10, qrbox:250 },
+      decodedText => {
+        try {
+          const data = JSON.parse(decodedText);
+          data.ticket = document.getElementById("ticket-input").value.trim();
+          data.items = (data.goods || []).map(item => {
+            const m = GOODS_MASTER.find(g => g.id === item.id) || {};
+            return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
+          });
+          lastScannedData = data;
+          displayScanResult(data);
+          toggleScan();
+        } catch(e) {
+          document.getElementById("scan-result").textContent = "読み取り失敗";
+        }
+      }
+    ).then(() => {
+      button.textContent = "スキャン停止";
+    }).catch(err => alert("カメラ起動失敗：" + err));
   }
 }
 
 function displayScanResult(d) {
   let totalPrice = 0, totalBonus = 0;
-  const rows = d.items.map(item => {
-    const amount = item.price * item.qty;
-    const bonusAmount = item.bonus * item.qty
+  const inventory = getInventory();
+  const warningLines = [];
+
+  const rows = d.items.map((item, index) => {
+    const inv = inventory.find(i => i.id === item.id);
+    const available = inv ? inv.stock : 0;
+    const selectedValue = item.qty <= available ? item.qty : available;
+
+    if (item.qty > available) {
+      warningLines.push(`「${item.name}」の在庫が不足しています。【希望数：${item.qty}個　残数：${available}個】`);
+    }
+
+    d.items[index].qty = selectedValue;
+    const amount = item.price * selectedValue;
+    const bonusAmount = item.bonus * selectedValue;
     totalPrice += amount;
     totalBonus += bonusAmount;
-    return `<tr><td>${item.name}</td><td>${item.qty}</td><td>￥${item.price}</td><td>${bonusAmount}枚</td><td>￥${amount}</td></tr>`;
+
+    const selectOptions = Array.from({ length: available + 1 }, (_, i) =>
+      `<option value="${i}" ${i === selectedValue ? "selected" : ""}>${i}</option>`
+    ).join("");
+
+    return `
+      <tr>
+        <td>${item.name}</td>
+        <td>
+          <select data-index="${index}" style="width: 100%;">${selectOptions}</select>
+        </td>
+        <td>￥${item.price}</td>
+        <td>${bonusAmount}枚</td>
+        <td>￥${amount}</td>
+      </tr>`;
   }).join("");
+
+  const warningHTML = warningLines.length > 0
+    ? `<p style="color: red; font-weight: bold;">${warningLines.join("<br>")}</p>`
+    : "";
+
   document.getElementById("scan-result").innerHTML = `
+    ${warningHTML}
     <table>
       <thead><tr><th>商品名</th><th>数量</th><th>単価</th><th>カード</th><th>小計</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
           <th colspan="3">合計</th>
-          <th>${totalBonus}枚</th>
-          <th>￥${totalPrice}</th>
+          <th id="total-bonus">${totalBonus}枚</th>
+          <th id="total-price">￥${totalPrice}</th>
         </tr>
       </tfoot>
     </table>
     <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">
       チケット番号：${d.ticket}<br>
-      金額合計：${totalPrice} 円<br>
-      応援カード合計：${totalBonus} 枚
+      金額合計：<span id="display-total-price">${totalPrice}</span> 円<br>
+      応援カード合計：<span id="display-total-bonus">${totalBonus}</span> 枚
     </p>
     <div style="margin-top: 1rem;">
       <label>預かり金額：<input type="number" id="payment-input" style="width: 100px;" /></label>
@@ -239,15 +319,59 @@ function displayScanResult(d) {
     </div>
   `;
 
+  const qtySelects = document.querySelectorAll('select[data-index]');
+  qtySelects.forEach(select => {
+    select.addEventListener("change", () => {
+      const idx = parseInt(select.dataset.index);
+      const newQty = parseInt(select.value) || 0;
+
+      d.items[idx].qty = newQty;
+      const item = d.items[idx];
+
+      // 行内再計算
+      const row = select.closest("tr");
+      const tdBonus = row.children[3];
+      const tdAmount = row.children[4];
+
+      const newAmount = item.price * item.qty;
+      const newBonus = item.bonus * item.qty;
+
+      tdBonus.textContent = `${newBonus}枚`;
+      tdAmount.textContent = `￥${newAmount}`;
+
+      // 合計再計算
+      let newTotalPrice = 0, newTotalBonus = 0;
+      d.items.forEach(item => {
+        newTotalPrice += item.price * item.qty;
+        newTotalBonus += item.bonus * item.qty;
+      });
+
+      document.getElementById("total-price").textContent = `￥${newTotalPrice}`;
+      document.getElementById("total-bonus").textContent = `${newTotalBonus}枚`;
+      document.getElementById("display-total-price").textContent = newTotalPrice;
+      document.getElementById("display-total-bonus").textContent = newTotalBonus;
+
+      // お釣り再計算
+      const paymentInput = document.getElementById("payment-input");
+      const changeResult = document.getElementById("change-result");
+      const payment = parseInt(paymentInput.value, 10);
+      if (!isNaN(payment)) {
+        const change = payment - newTotalPrice;
+        changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+      }
+    });
+  });
+
+  // 支払い入力欄監視
   const paymentInput = document.getElementById("payment-input");
   const changeResult = document.getElementById("change-result");
-
   paymentInput.addEventListener("input", () => {
     const payment = parseInt(paymentInput.value, 10);
+    const currentTotal = d.items.reduce((sum, item) => sum + item.price * item.qty, 0);
     if (isNaN(payment)) {
       changeResult.textContent = "";
     } else {
-      const change = payment - totalPrice;
+      const change = payment - currentTotal;
       changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
     }
   });
