@@ -147,283 +147,366 @@
 
   <div class="section">
     <div class="input-scan-wrap">
-      <input type="text" id="ticket-input" class="ticket-input" oninput="checkTicketDuplication()" placeholder="チケット番号"/>
-      <button id="toggle-scan-btn" onclick="toggleScan()" disabled class="btn-disabled">スキャン開始</button>
+      <input type="text" id="ticket-input" class="ticket-input" oninput="inputTicket()" placeholder="チケット番号"/>
+      <button id="toggle-scan-btn" onclick="clickToggleScanBtn()" disabled class="btn-disabled">スキャン開始</button>
     </div>
     <p id="ticket-warning" style="color: red; font-weight: bold;"></p>
     <div id="reader" style="margin-top: 1em;"></div>
     <div id="scan-result" style="margin-top: 1em;"></div>
-    <button onclick="saveData()">保存</button>
+    <button onclick="clickSaveBtn()">保存</button>
   </div>
 
-<script>
-const GOODS_MASTER = [
-  { id: 1,  name: "入場特典", price:0, bonus:3 },
-  { id: 2,  name: "商品1", price:2500, bonus:2 },
-  { id: 3,  name: "商品2", price:1500,  bonus:1 },
-  { id: 4,  name: "商品3", price:1000,  bonus:1 },
-  { id: 5,  name: "商品4", price:2000,  bonus:1 },
-  { id: 6,  name: "商品5", price:400,  bonus:0 },
-  { id: 7,  name: "商品6", price:400,  bonus:0 },
-  { id: 8,  name: "商品7", price:400,  bonus:0 },
-  { id: 9,  name: "商品8", price:400,  bonus:0 },
-  { id:10, name: "商品9", price:400,  bonus:0 },
-  { id:11, name: "商品10", price:800, bonus:1 },
-  { id:12, name: "商品11", price:2200, bonus:3 },
-  { id:13, name: "商品12", price:2200, bonus:3 },
-  { id:14, name: "商品13", price:3500, bonus:5 },
-  { id:15, name: "商品14", price:300,  bonus:0 },
-  { id:16, name: "商品15", price:400,  bonus:0 }
-];
+  <script>
+    const STORAGE_KEY = "purchases";
+    const INVENTORY_KEY = "inventory";
+    let lastScannedData = null;
+    let qrScanner = null;
 
-const STORAGE_KEY = "purchases";
-const INVENTORY_KEY = "inventory";
-let lastScannedData = null;
-let qrScanner = null;
+    // 商品情報（マスタ）
+    const GOODS_MASTER = [
+      { id: 1,  name: "入場特典", price:0, bonus:3 },
+      { id: 2,  name: "商品1", price:2500, bonus:2 },
+      { id: 3,  name: "商品2", price:1500,  bonus:1 },
+      { id: 4,  name: "商品3", price:1000,  bonus:1 },
+      { id: 5,  name: "缶バッジセット", price:2000,  bonus:1 },
+      { id: 6,  name: "缶バッジA", price:400,  bonus:0 },
+      { id: 7,  name: "缶バッジB", price:400,  bonus:0 },
+      { id: 8,  name: "缶バッジC", price:400,  bonus:0 },
+      { id: 9,  name: "缶バッジD", price:400,  bonus:0 },
+      { id:10, name: "缶バッジE", price:400,  bonus:0 },
+      { id:11, name: "商品10", price:800, bonus:1 },
+      { id:12, name: "商品11", price:2200, bonus:3 },
+      { id:13, name: "商品12", price:2200, bonus:3 },
+      { id:14, name: "商品13", price:3500, bonus:5 },
+      { id:15, name: "商品14", price:300,  bonus:0 },
+      { id:16, name: "商品15", price:400,  bonus:0 }
+    ];
 
-const customStock = [
-  { id: 1, stock: 50 }, { id: 2, stock: 30 }, { id: 3, stock: 100 },
-  { id: 4, stock: 70 }, { id: 5, stock: 90 }, { id: 6, stock: 60 },
-  { id: 7, stock: 40 }, { id: 8, stock: 80 }, { id: 9, stock: 20 },
-  { id: 10, stock: 55 }, { id: 11, stock: 25 }, { id: 12, stock: 35 },
-  { id: 13, stock: 45 }, { id: 14, stock: 65 }, { id: 15, stock: 75 },
-  { id: 16, stock: 85 }
-];
+    // 初期在庫数
+    const INIT_STOCK = [
+      { id: 1, stock: 50 }, 
+      { id: 2, stock: 30 }, 
+      { id: 3, stock: 100 },
+      { id: 4, stock: 80 }, 
+      { id: 5, stock: 50 }, 
+      { id: 6, stock: 50 },
+      { id: 7, stock: 50 }, 
+      { id: 8, stock: 50 }, 
+      { id: 9, stock: 50 },
+      { id: 10, stock: 50 }, 
+      { id: 11, stock: 25 }, 
+      { id: 12, stock: 35 },
+      { id: 13, stock: 45 }, 
+      { id: 14, stock: 65 }, 
+      { id: 15, stock: 75 },
+      { id: 16, stock: 85 }
+    ];
 
-window.onload = function() {
-  // localStorageに在庫数を設定
-  if (!localStorage.getItem(INVENTORY_KEY)) {
-    localStorage.setItem(INVENTORY_KEY, JSON.stringify(customStock));
-  }
-}
-
-function checkTicketDuplication() {
-  const ticket = document.getElementById("ticket-input").value.trim();
-  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  const warning = document.getElementById("ticket-warning");
-  const scanButton = document.getElementById("toggle-scan-btn");
-
-  if (ticket === "") {
-    warning.textContent = "チケット番号が未入力です";
-    scanButton.disabled = true;  // ボタン無効化
-    scanButton.classList.add("btn-disabled");
-    return;
-  }
-
-  if (existing.some(d => d.ticket === ticket)) {
-    warning.textContent = "このチケット番号はすでに購入登録済みです";
-    scanButton.disabled = false;  // ボタン有効化
-    scanButton.classList.remove("btn-disabled");
-  } else {
-    warning.textContent = "";
-    scanButton.disabled = false;  // ボタン有効化
-    scanButton.classList.remove("btn-disabled");
-  }
-}
-
-function toggleScan() {
-  const button = document.getElementById("toggle-scan-btn");
-  if (qrScanner) {
-    // 停止処理
-    qrScanner.stop().then(() => {
-      qrScanner.clear();
-      qrScanner = null;
-      button.textContent = "スキャン開始";
-    });
-  } else {
-    // 開始処理
-    qrScanner = new Html5Qrcode("reader");
-    qrScanner.start({ facingMode:"environment" }, { fps:10, qrbox:250 },
-      decodedText => {
-        try {
-          const data = JSON.parse(decodedText);
-          data.ticket = document.getElementById("ticket-input").value.trim();
-          data.items = (data.goods || []).map(item => {
-            const m = GOODS_MASTER.find(g => g.id === item.id) || {};
-            return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
-          });
-          lastScannedData = data;
-          displayScanResult(data);
-          toggleScan();
-        } catch(e) {
-          document.getElementById("scan-result").textContent = "読み取り失敗";
-        }
+    ///
+    /// 画面ロード時処理
+    ///
+    window.onload = function() {
+      if (!localStorage.getItem(INVENTORY_KEY)) {
+        localStorage.setItem(INVENTORY_KEY, JSON.stringify(INIT_STOCK));
       }
-    ).then(() => {
-      button.textContent = "スキャン停止";
-    }).catch(err => alert("カメラ起動失敗：" + err));
-  }
-}
-
-function displayScanResult(d) {
-  let totalPrice = 0, totalBonus = 0;
-  const inventory = getInventory();
-  const warningLines = [];
-
-  const rows = d.items.map((item, index) => {
-    const inv = inventory.find(i => i.id === item.id);
-    const available = inv ? inv.stock : 0;
-    const selectedValue = item.qty <= available ? item.qty : available;
-
-    if (item.qty > available) {
-      warningLines.push(`「${item.name}」の在庫が不足しています。【希望数：${item.qty}個　残数：${available}個】`);
     }
 
-    d.items[index].qty = selectedValue;
-    const amount = item.price * selectedValue;
-    const bonusAmount = item.bonus * selectedValue;
-    totalPrice += amount;
-    totalBonus += bonusAmount;
+    ///
+    /// チケット番号入力時処理
+    ///
+    function inputTicket() {
+      const ticket = document.getElementById("ticket-input").value.trim();
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const warning = document.getElementById("ticket-warning");
+      const scanButton = document.getElementById("toggle-scan-btn");
 
-    const selectOptions = Array.from({ length: available + 1 }, (_, i) =>
-      `<option value="${i}" ${i === selectedValue ? "selected" : ""}>${i}</option>`
-    ).join("");
+      if (ticket === "") {
+        warning.textContent = "チケット番号が未入力です";
+        scanButton.disabled = true;  // ボタン無効化
+        scanButton.classList.add("btn-disabled");
+        return;
+      }
 
-    return `
-      <tr>
-        <td>${item.name}</td>
-        <td>
-          <select data-index="${index}" style="width: 100%;">${selectOptions}</select>
-        </td>
-        <td>￥${item.price}</td>
-        <td>${bonusAmount}枚</td>
-        <td>￥${amount}</td>
-      </tr>`;
-  }).join("");
+      if (existing.some(d => d.ticket === ticket)) {
+        warning.textContent = "このチケット番号はすでに購入登録済みです";
+        scanButton.disabled = false;  // ボタン有効化
+        scanButton.classList.remove("btn-disabled");
+      } else {
+        warning.textContent = "";
+        scanButton.disabled = false;  // ボタン有効化
+        scanButton.classList.remove("btn-disabled");
+      }
+    }
 
-  const warningHTML = warningLines.length > 0
-    ? `<p style="color: red; font-weight: bold;">${warningLines.join("<br>")}</p>`
-    : "";
+    ///
+    /// スキャン開始/停止ボタン押下
+    ///
+    function clickToggleScanBtn() {
+      const button = document.getElementById("toggle-scan-btn");
+      if (qrScanner) {
+        // 停止処理
+        qrScanner.stop().then(() => {
+          qrScanner.clear();
+          qrScanner = null;
+          button.textContent = "スキャン開始";
+        });
+      } else {
+        // 開始処理
+        qrScanner = new Html5Qrcode("reader");
+        qrScanner.start({ facingMode:"environment" }, { fps:10, qrbox:250 },
+          decodedText => {
+            try {
+              const data = JSON.parse(decodedText);
+              data.ticket = document.getElementById("ticket-input").value.trim();
+              data.items = (data.goods || []).map(item => {
+                const m = GOODS_MASTER.find(g => g.id === item.id) || {};
+                return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
+              });
+              lastScannedData = data;
+              displayScanResult(data);
+              clickToggleScanBtn();
+            } catch(e) {
+              document.getElementById("scan-result").textContent = "読み取り失敗";
+            }
+          }
+        ).then(() => {
+          button.textContent = "スキャン停止";
+        }).catch(err => alert("カメラ起動失敗：" + err));
+      }
+    }
 
-  document.getElementById("scan-result").innerHTML = `
-    ${warningHTML}
-    <table>
-      <thead><tr><th>商品名</th><th>数量</th><th>単価</th><th>カード</th><th>小計</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot>
-        <tr>
-          <th colspan="3">合計</th>
-          <th id="total-bonus">${totalBonus}枚</th>
-          <th id="total-price">￥${totalPrice}</th>
-        </tr>
-      </tfoot>
-    </table>
-    <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">
-      チケット番号：${d.ticket}<br>
-      金額合計：<span id="display-total-price">${totalPrice}</span> 円<br>
-      応援カード合計：<span id="display-total-bonus">${totalBonus}</span> 枚
-    </p>
-    <div style="margin-top: 1rem;">
-      <label>預かり金額：<input type="number" id="payment-input" style="width: 100px;" /></label>
-      <p id="change-result" style="font-weight: bold;"></p>
-    </div>
-  `;
+    ///
+    /// スキャン結果表示
+    ///
+    function displayScanResult(d) {
+      let totalPrice = 0;
+      let totalBonus = 0;
+      const inventory = getInventory();
+      const warningLines = [];
 
-  const qtySelects = document.querySelectorAll('select[data-index]');
-  qtySelects.forEach(select => {
-    select.addEventListener("change", () => {
-      const idx = parseInt(select.dataset.index);
-      const newQty = parseInt(select.value) || 0;
+      const rows = d.items.map((item, index) => {
+        const inv = inventory.find(i => i.id === item.id);
+        const available = inv ? inv.stock : 0;
+        const selectedValue = item.qty <= available ? item.qty : available;
 
-      d.items[idx].qty = newQty;
-      const item = d.items[idx];
+        if (item.qty > available) {
+          warningLines.push(`「${item.name}」の在庫が不足しています。【希望数：${item.qty}個　残数：${available}個】`);
+        }
 
-      // 行内再計算
-      const row = select.closest("tr");
-      const tdBonus = row.children[3];
-      const tdAmount = row.children[4];
+        d.items[index].qty = selectedValue;
+        const amount = item.price * selectedValue;
+        const bonusAmount = item.bonus * selectedValue;
+        totalPrice += amount;
+        totalBonus += bonusAmount;
 
-      const newAmount = item.price * item.qty;
-      const newBonus = item.bonus * item.qty;
+        const selectOptions = Array.from({ length: available + 1 }, (_, i) =>
+          `<option value="${i}" ${i === selectedValue ? "selected" : ""}>${i}</option>`
+        ).join("");
 
-      tdBonus.textContent = `${newBonus}枚`;
-      tdAmount.textContent = `￥${newAmount}`;
+        return `
+          <tr>
+            <td>${item.name}</td>
+            <td>
+              <select data-index="${index}" style="width: 100%;">${selectOptions}</select>
+            </td>
+            <td>￥${item.price}</td>
+            <td>${bonusAmount}枚</td>
+            <td>￥${amount}</td>
+          </tr>`;
+      }).join("");
 
-      // 合計再計算
-      let newTotalPrice = 0, newTotalBonus = 0;
-      d.items.forEach(item => {
-        newTotalPrice += item.price * item.qty;
-        newTotalBonus += item.bonus * item.qty;
+      const warningHTML = warningLines.length > 0
+        ? `<p style="color: red; font-weight: bold;">${warningLines.join("<br>")}</p>`
+        : "";
+
+      document.getElementById("scan-result").innerHTML = `
+        ${warningHTML}
+        <table>
+          <thead><tr><th>商品名</th><th>数量</th><th>単価</th><th>カード</th><th>小計</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <th colspan="3">合計</th>
+              <th id="total-bonus">${totalBonus}枚</th>
+              <th id="total-price">￥${totalPrice}</th>
+            </tr>
+          </tfoot>
+        </table>
+        <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">
+          チケット番号：${d.ticket}<br>
+          金額合計：<span id="display-total-price">${totalPrice}</span> 円<br>
+          応援カード合計：<span id="display-total-bonus">${totalBonus}</span> 枚
+        </p>
+        <div style="margin-top: 1rem;">
+          <label>預かり金額：<input type="number" id="payment-input" style="width: 100px;" /></label>
+          <p id="change-result" style="font-weight: bold;"></p>
+        </div>
+      `;
+
+      const qtySelects = document.querySelectorAll('select[data-index]');
+      qtySelects.forEach(select => {
+        select.addEventListener("change", () => {
+          const idx = parseInt(select.dataset.index);
+          const newQty = parseInt(select.value) || 0;
+
+          d.items[idx].qty = newQty;
+          const item = d.items[idx];
+
+          // 行内再計算
+          const row = select.closest("tr");
+          const tdBonus = row.children[3];
+          const tdAmount = row.children[4];
+
+          const newAmount = item.price * item.qty;
+          const newBonus = item.bonus * item.qty;
+
+          tdBonus.textContent = `${newBonus}枚`;
+          tdAmount.textContent = `￥${newAmount}`;
+
+          // 合計再計算
+          let newTotalPrice = 0, newTotalBonus = 0;
+          d.items.forEach(item => {
+            newTotalPrice += item.price * item.qty;
+            newTotalBonus += item.bonus * item.qty;
+          });
+
+          document.getElementById("total-price").textContent = `￥${newTotalPrice}`;
+          document.getElementById("total-bonus").textContent = `${newTotalBonus}枚`;
+          document.getElementById("display-total-price").textContent = newTotalPrice;
+          document.getElementById("display-total-bonus").textContent = newTotalBonus;
+
+          // お釣り再計算
+          const paymentInput = document.getElementById("payment-input");
+          const changeResult = document.getElementById("change-result");
+          const payment = parseInt(paymentInput.value, 10);
+          if (!isNaN(payment)) {
+            const change = payment - newTotalPrice;
+            changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+          }
+        });
       });
 
-      document.getElementById("total-price").textContent = `￥${newTotalPrice}`;
-      document.getElementById("total-bonus").textContent = `${newTotalBonus}枚`;
-      document.getElementById("display-total-price").textContent = newTotalPrice;
-      document.getElementById("display-total-bonus").textContent = newTotalBonus;
-
-      // お釣り再計算
+      // 支払い入力欄監視
       const paymentInput = document.getElementById("payment-input");
       const changeResult = document.getElementById("change-result");
-      const payment = parseInt(paymentInput.value, 10);
-      if (!isNaN(payment)) {
-        const change = payment - newTotalPrice;
-        changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+      paymentInput.addEventListener("input", () => {
+        const payment = parseInt(paymentInput.value, 10);
+        const currentTotal = d.items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        if (isNaN(payment)) {
+          changeResult.textContent = "";
+        } else {
+          const change = payment - currentTotal;
+          changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+        }
+      });
+    }
+
+    ///
+    /// 保存ボタン押下時
+    ///
+    function clickSaveBtn() {
+      if (!lastScannedData) return alert("保存するデータがありません。");
+      if (!isStockSufficient(lastScannedData.items)) {
+        return alert("在庫が不足している商品があります。");
       }
-    });
-  });
 
-  // 支払い入力欄監視
-  const paymentInput = document.getElementById("payment-input");
-  const changeResult = document.getElementById("change-result");
-  paymentInput.addEventListener("input", () => {
-    const payment = parseInt(paymentInput.value, 10);
-    const currentTotal = d.items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    if (isNaN(payment)) {
-      changeResult.textContent = "";
-    } else {
-      const change = payment - currentTotal;
-      changeResult.textContent = `お釣り：￥${change >= 0 ? change : "不足しています"}`;
+      // 在庫データ更新
+      reduceInventory(lastScannedData.items);
+      
+      // 購入データ更新
+      const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      arr.push(lastScannedData);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      
+      alert("保存しました。");
+
+      // 画面を簡易的に初期化する
+      document.getElementById("scan-result").textContent = "";
+      document.getElementById("ticket-input").value = "";
+      document.getElementById("ticket-warning").textContent = "";
+      document.getElementById("toggle-scan-btn").textContent = "スキャン停止";
+      document.getElementById("toggle-scan-btn").disabled = true;  // ボタン無効化
+      document.getElementById("toggle-scan-btn").classList.add("btn-disabled");
+      lastScannedData = null;
     }
-  });
-}
 
-function saveData() {
-  if (!lastScannedData) return alert("QRを読み取ってください");
-  const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  if (!isStockSufficient(lastScannedData.items)) {
-    return alert("在庫が不足している商品があります。保存できません。");
-  }
-  arr.push(lastScannedData);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-  reduceInventory(lastScannedData.items);
-  alert("保存しました");
-  document.getElementById("scan-result").textContent = "";
-  lastScannedData = null;
-}
-
-function initInventory() {
-  // localStorageに在庫数を設定
-  localStorage.setItem(INVENTORY_KEY, JSON.stringify(customStock));
-  alert("在庫を初期化しました");
-}
-
-function getInventory() {
-  return JSON.parse(localStorage.getItem(INVENTORY_KEY) || "[]");
-}
-
-function isStockSufficient(items) {
-  const inventory = getInventory();
-  for (const item of items) {
-    const invItem = inventory.find(i => i.id === item.id);
-    if (!invItem || invItem.stock < item.qty) {
-      return false;
+    ///
+    /// 在庫情報の取得
+    ///
+    function getInventory() {
+      return  JSON.parse(localStorage.getItem(INVENTORY_KEY) || "[]");
     }
-  }
-  return true;
-}
 
-function reduceInventory(items) {
-  const inventory = getInventory();
-  items.forEach(item => {
-    const invItem = inventory.find(i => i.id === item.id);
-    if (invItem) {
-      invItem.stock -= item.qty;
-      if (invItem.stock < 0) invItem.stock = 0;
+    ///
+    /// 在庫確認
+    ///
+    function isStockSufficient(items) {
+      const inventory = getInventory();
+      for (const item of items) {
+        const invItem = inventory.find(i => i.id === item.id);
+        if (!invItem || invItem.stock < item.qty) {
+          return false;
+        }
+      }
+      return true;
     }
-  });
-  localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
-}
 
-</script>
+    ///
+    /// 在庫減算
+    ///
+    function reduceInventory(items) {
+      const inventory = getInventory();
+      const setId = 5;
+      const componentIds = [6, 7, 8, 9, 10];
+      const componentStocks = [];
+      const processedIds = new Set();
+
+      // セット商品が購入された場合
+      const setItem = items.find(item => item.id === setId);
+      if (setItem) {
+        const qty = setItem.qty;
+        [setId, ...componentIds].forEach(id => {
+          const invItem = inventory.find(i => i.id === id);
+          if (invItem) {
+            invItem.stock = Math.max(0, invItem.stock - qty);
+            processedIds.add(id);
+          }
+        });
+      }
+
+      // セット対応のばら商品が購入された場合
+      componentIds.forEach(id => {
+        const componentItem = items.find(item => item.id === id);
+        if (componentItem) {
+          const invItem = inventory.find(i => i.id === id);
+          if (invItem) {
+            invItem.stock = Math.max(0, invItem.stock - componentItem.qty);
+            componentStocks.push(invItem.stock)
+            processedIds.add(id);
+          }
+        }
+      })
+      if (componentStocks.length > 0) {
+        const invSetItem = inventory.find(i => i.id === setId);
+        if(invSetItem){
+          invSetItem.stock = Math.min(...componentStocks);
+          processedIds.add(setId);  
+        }
+      }
+
+      // その他の商品の購入処理
+      items.forEach(item => {
+        if (!processedIds.has(item.id)) {
+          const invItem = inventory.find(i => i.id === item.id);
+          if (invItem) {
+            invItem.stock = Math.max(0, invItem.stock - item.qty);
+            processedIds.add(item.id);
+          }
+        }
+      });
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
+    }
+
+  </script>
 </body>
 </html>

@@ -72,16 +72,16 @@
       border: 1px solid #ccc;
       padding: 0.4rem 0.3rem;
       text-align: center;
-      font-size: 0.85rem; /* ← フォントサイズ小さめに */
-      white-space: nowrap; /* ← 折り返しを防止 */
+      font-size: 0.85rem;
+      white-space: nowrap;
     }
 
     .item-name{
       border: 1px solid #ccc;
       padding: 0.4rem 0.3rem;
       text-align: center;
-      font-size: 0.85rem; /* ← フォントサイズ小さめに */
-      white-space: normal; /* ← 折り返しあり */
+      font-size: 0.85rem;
+      white-space: normal;
     }
 
     select {
@@ -137,6 +137,7 @@
         font-size: 0.95rem;
       }
     }
+    
   </style>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
@@ -161,6 +162,7 @@
     <h3>こちらをスタッフに提示してください</h3>
     <div id="qrcode"></div>
     <div id="qr-summary"></div>
+    <button onclick="backToConfirm()">戻る</button>
   </section>
 
   <script>
@@ -261,31 +263,43 @@
       document.getElementById("pageConfirm").style.display = "none";
       document.getElementById("pageQR").style.display = "block";
       const purchased = stateGoods.filter(g => g.qty > 0).map(g => ({ id: g.id, qty: g.qty }));
+      // const totalPrice = purchased.reduce((s, g) => {
+      //   const obj = GOODS.find(x => x.id === g.id); return s + obj.price * g.qty;
+      // }, 0);
+      // const totalBonus = purchased.reduce((s, g) => {
+      //   const obj = GOODS.find(x => x.id === g.id); return s + obj.bonus * g.qty;
+      // }, 0);
+      // const payload = { goods: purchased, totalPrice, totalBonus };
+
+      // QRコードの生成
+      const qrDiv = document.getElementById("qrcode");
+      qrDiv.innerHTML = "";
+      // new QRCode(qrDiv, { text: JSON.stringify(payload), width: 256, height: 256 });
+      new QRCode(qrDiv, { text: JSON.stringify(purchased), width: 256, height: 256 });
+
+      // 画面表示用のテーブルを作成
       const totalPrice = purchased.reduce((s, g) => {
         const obj = GOODS.find(x => x.id === g.id); return s + obj.price * g.qty;
       }, 0);
       const totalBonus = purchased.reduce((s, g) => {
         const obj = GOODS.find(x => x.id === g.id); return s + obj.bonus * g.qty;
       }, 0);
-      const payload = { goods: purchased, totalPrice, totalBonus };
-
-      // QRコードの生成
-      const qrDiv = document.getElementById("qrcode");
-      qrDiv.innerHTML = "";
-      new QRCode(qrDiv, { text: JSON.stringify(payload), width: 256, height: 256 });
-
-      // 画面表示用のテーブルを作成
       let summaryHtml = `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
       purchased.forEach(g => {
         const item = GOODS.find(x => x.id === g.id);
         summaryHtml += `<tr><td class="item-name">${item.name}</td><td>${g.qty}</td><td>￥${item.price * g.qty}</td><td>${item.bonus * g.qty}</td></tr>`;
       });
-      summaryHtml += `</tbody></table>
-               <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：${totalPrice} 円</p>
-               <p style="font-weight: bold; font-size: 1.1rem;">応援カード合計：${totalBonus} 枚</p>`;
+      summaryHtml += `<tfoot><tr><th colspan="2">合計</th><th>￥${totalPrice}</th><th>${totalBonus}</th></tr></tfoot></tbody></table>`;
 
       document.getElementById("qr-summary").innerHTML = summaryHtml;
     }
+
+    function backToConfirm(){
+      document.getElementById("page1").style.display = "none";
+      document.getElementById("pageConfirm").style.display = "block";
+      document.getElementById("pageQR").style.display = "none";
+    }
+
     window.onload = init;
   </script>
 </body>
