@@ -253,15 +253,27 @@
       } else {
         // 開始処理
         qrScanner = new Html5Qrcode("reader");
-        qrScanner.start({ facingMode:"environment" }, { fps:10, qrbox:250 },
+        qrScanner.start(
+          { facingMode:"environment" }, 
+          { fps:10, qrbox:250 },
           decodedText => {
             try {
-              const data = JSON.parse(decodedText);
-              data.ticket = document.getElementById("ticket-input").value.trim();
-              data.items = (data.goods || []).map(item => {
+              const parsed = JSON.parse(decodedText);
+              const ticket = document.getElementById("ticket-input").value.trim();
+              const items = (Array.isArray(parsed) ? parsed : []).map(item => {
                 const m = GOODS_MASTER.find(g => g.id === item.id) || {};
-                return { id: item.id, qty: item.qty, name: m.name || "不明", price: m.price||0, bonus: m.bonus||0 };
+                return { 
+                  id: item.id, 
+                  qty: item.qty, 
+                  name: m.name || "不明", 
+                  price: m.price||0, 
+                  bonus: m.bonus||0 
+                };
               });
+              const data = {
+                ticket: ticket, 
+                items: items
+              };
               lastScannedData = data;
               displayScanResult(data);
               clickToggleScanBtn();
