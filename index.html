@@ -137,7 +137,7 @@
         font-size: 0.95rem;
       }
     }
-    
+
   </style>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
@@ -263,18 +263,10 @@
       document.getElementById("pageConfirm").style.display = "none";
       document.getElementById("pageQR").style.display = "block";
       const purchased = stateGoods.filter(g => g.qty > 0).map(g => ({ id: g.id, qty: g.qty }));
-      // const totalPrice = purchased.reduce((s, g) => {
-      //   const obj = GOODS.find(x => x.id === g.id); return s + obj.price * g.qty;
-      // }, 0);
-      // const totalBonus = purchased.reduce((s, g) => {
-      //   const obj = GOODS.find(x => x.id === g.id); return s + obj.bonus * g.qty;
-      // }, 0);
-      // const payload = { goods: purchased, totalPrice, totalBonus };
 
       // QRコードの生成
       const qrDiv = document.getElementById("qrcode");
       qrDiv.innerHTML = "";
-      // new QRCode(qrDiv, { text: JSON.stringify(payload), width: 256, height: 256 });
       new QRCode(qrDiv, { text: JSON.stringify(purchased), width: 256, height: 256 });
 
       // 画面表示用のテーブルを作成

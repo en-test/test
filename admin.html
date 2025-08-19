@@ -157,7 +157,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "purchases";
+    const PURCHASES_KEY = "purchases";
     const INVENTORY_KEY = "inventory";
     let lastScannedData = null;
     let qrScanner = null;
@@ -216,7 +216,7 @@
     ///
     function inputTicket() {
       const ticket = document.getElementById("ticket-input").value.trim();
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const existing = JSON.parse(localStorage.getItem(PURCHASES_KEY) || "[]");
       const warning = document.getElementById("ticket-warning");
       const scanButton = document.getElementById("toggle-scan-btn");
 
@@ -426,9 +426,9 @@
       reduceInventory(lastScannedData.items);
       
       // 購入データ更新
-      const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const arr = JSON.parse(localStorage.getItem(PURCHASES_KEY) || "[]");
       arr.push(lastScannedData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      localStorage.setItem(PURCHASES_KEY, JSON.stringify(arr));
       
       alert("保存しました。");
 
