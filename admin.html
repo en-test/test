@@ -135,12 +135,13 @@
       border-radius: 6px;
       border: 1px solid #ccc;
       box-sizing: border-box;
+      width: 4em;
     }
 
     .summary{
       margin-top: 1rem; 
       font-weight: bold; 
-      font-size: 1.3rem;
+      font-size: 1.2rem;
     }
 
     .payment-input {
@@ -178,22 +179,22 @@
 
     // 商品情報（マスタ）
     const GOODS_MASTER = [
-      { id: 1,  name: "入場特典", price:0, bonus:3 },
-      { id: 2,  name: "商品1", price:2500, bonus:2 },
-      { id: 3,  name: "商品2", price:1500,  bonus:1 },
-      { id: 4,  name: "商品3", price:1000,  bonus:1 },
-      { id: 5,  name: "缶バッジセット", price:2000,  bonus:1 },
-      { id: 6,  name: "缶バッジA", price:400,  bonus:0 },
-      { id: 7,  name: "缶バッジB", price:400,  bonus:0 },
-      { id: 8,  name: "缶バッジC", price:400,  bonus:0 },
-      { id: 9,  name: "缶バッジD", price:400,  bonus:0 },
-      { id:10, name: "缶バッジE", price:400,  bonus:0 },
-      { id:11, name: "商品10", price:800, bonus:1 },
-      { id:12, name: "商品11", price:2200, bonus:3 },
-      { id:13, name: "商品12", price:2200, bonus:3 },
-      { id:14, name: "商品13", price:3500, bonus:5 },
-      { id:15, name: "商品14", price:300,  bonus:0 },
-      { id:16, name: "商品15", price:400,  bonus:0 }
+      { id: 1,  name: "商品1", price:0, bonus:3 },
+      { id: 2,  name: "商品2", price:2500, bonus:2 },
+      { id: 3,  name: "商品3", price:1500,  bonus:1 },
+      { id: 4,  name: "商品4", price:1000,  bonus:1 },
+      { id: 5,  name: "缶バッジA", price:400,  bonus:0 },
+      { id: 6,  name: "缶バッジB", price:400,  bonus:0 },
+      { id: 7,  name: "缶バッジC", price:400,  bonus:0 },
+      { id: 8,  name: "缶バッジD", price:400,  bonus:0 },
+      { id: 9,  name: "缶バッジE", price:400,  bonus:0 },
+      { id:10, name: "商品10", price:400,  bonus:0 },
+      { id:11, name: "商品11", price:800, bonus:1 },
+      { id:12, name: "商品12", price:2200, bonus:3 },
+      { id:13, name: "商品13", price:2200, bonus:3 },
+      { id:14, name: "商品14", price:3500, bonus:5 },
+      { id:15, name: "商品15", price:300,  bonus:0 },
+      { id:16, name: "商品16", price:400,  bonus:0 }
     ];
 
     // 初期在庫数
@@ -340,6 +341,7 @@
     /// スキャン結果表示
     ///
     function displayScanResult(data) {
+      let initTotalQty = 0;
       let initTotalPrice = 0;
       let initTotalBonus = 0;
       const inventory = getInventory();
@@ -362,6 +364,7 @@
         data.items[index].qty = selectedValue;
         const amount = item.price * selectedValue;
         const bonusAmount = item.bonus * selectedValue;
+        initTotalQty += selectedValue;
         initTotalPrice += amount;
         initTotalBonus += bonusAmount;
 
@@ -381,10 +384,19 @@
           </tr>`;
       }).join("");
 
+      // 不足している商品がある場合、メッセージを表示
       const warningHTML = warningLines.length > 0
         ? `<p style="color: red; font-weight: bold;">${warningLines.join("<br>")}</p>`
         : "";
 
+      // セット対象商品5個購入ごとに応援カードを1枚追加
+      const countForBonus = data.items
+        .filter(item => item.id >= 5 && item.id <= 9)
+        .reduce((sum, item) => sum + item.qty, 0);
+      const initSetBonus = Math.floor(countForBonus / 5);
+      const initFinalBonus = initTotalBonus + initSetBonus
+
+      // スキャン結果画面表示（初期値）
       document.getElementById("scan-result").innerHTML = `
         ${warningHTML}
         <table>
@@ -392,15 +404,26 @@
           <tbody>${rows}</tbody>
           <tfoot>
             <tr>
-              <th colspan="3">合計</th>
+              <th colspan="2">合計</th>
+              <th id="total-qty">${initTotalQty}点</th>
               <th id="total-bonus">${initTotalBonus}枚</th>
               <th id="total-price">￥${initTotalPrice}</th>
             </tr>
           </tfoot>
         </table>
+        <table>
+          <tfoot>
+            <tr>
+              <th>缶バッジ購入点数</th>
+              <td id="count-for-bonus">${countForBonus}点</td>
+              <th>追加応援カード枚数</th>
+              <td id="set-bonus">${initSetBonus}枚</td>
+            </tr>
+          </tfoot>
+        </table>
         <p class="summary">
           金額合計　　¥ <span id="display-total-price">${initTotalPrice}</span><br>
-          応援カード　<span id="display-total-bonus">${initTotalBonus}</span> 枚
+          応援カード　<span id="display-final-bonus">${initFinalBonus}</span> 枚
         </p>
         預かり金額　<input type="number" id="payment-input" class="payment-input"/>
         <p id="change-result" class="summary"/></p>
@@ -409,8 +432,11 @@
       `;
 
       // 保存用データに情報を追加
+      data.totalQty = initTotalQty
       data.totalPrice = initTotalPrice;
       data.totalBonus = initTotalBonus;
+      data.setBonus = initSetBonus;
+      data.finalBonus = initFinalBonus;
 
       // 数量選択変更時
       const qtySelects = document.querySelectorAll('select[data-index]');
@@ -434,21 +460,35 @@
           tdAmount.textContent = `￥${newAmount}`;
 
           // 合計再計算
-          let newTotalPrice = 0
+          let newTotalQty = 0;
+          let newTotalPrice = 0;
           let newTotalBonus = 0;
 
           data.items.forEach(item => {
+            newTotalQty += item.qty
             newTotalPrice += item.price * item.qty;
             newTotalBonus += item.bonus * item.qty;
           });
 
+          const countForBonus = data.items
+            .filter(item => item.id >= 5 && item.id <= 9)
+            .reduce((sum, item) => sum + item.qty, 0);
+          const newSetBonus = Math.floor(countForBonus / 5);
+          const newFinalBonus = newTotalBonus + newSetBonus
+
+          data.totalQty = newTotalQty;
           data.totalPrice = newTotalPrice;
           data.totalBonus = newTotalBonus;
+          data.setBonus = newSetBonus;
+          data.finalBonus = newFinalBonus;
 
+          document.getElementById("total-qty").textContent = `${newTotalQty}点`;
           document.getElementById("total-price").textContent = `￥${newTotalPrice}`;
           document.getElementById("total-bonus").textContent = `${newTotalBonus}枚`;
+          document.getElementById("count-for-bonus").textContent = `${countForBonus}点`;
+          document.getElementById("set-bonus").textContent = `${newSetBonus}枚`;
           document.getElementById("display-total-price").textContent = newTotalPrice;
-          document.getElementById("display-total-bonus").textContent = newTotalBonus;
+          document.getElementById("display-final-bonus").textContent = newFinalBonus;
 
           // お釣り再計算
           const paymentInput = document.getElementById("payment-input");
@@ -541,57 +581,15 @@
     ///
     function reduceInventory(items) {
       const inventory = getInventory();
-      const setId = 5;
-      const componentIds = [6, 7, 8, 9, 10];
-      const componentStocks = [];
-      const processedIds = new Set();
-
-      // セット商品が購入された場合
-      const setItem = items.find(item => item.id === setId);
-      if (setItem) {
-        const qty = setItem.qty;
-        [setId, ...componentIds].forEach(id => {
-          const invItem = inventory.find(i => i.id === id);
-          if (invItem) {
-            invItem.stock = Math.max(0, invItem.stock - qty);
-            processedIds.add(id);
-          }
-        });
-      }
-
-      // セット対応のばら商品が購入された場合
-      componentIds.forEach(id => {
-        const componentItem = items.find(item => item.id === id);
-        if (componentItem) {
-          const invItem = inventory.find(i => i.id === id);
-          if (invItem) {
-            invItem.stock = Math.max(0, invItem.stock - componentItem.qty);
-            componentStocks.push(invItem.stock)
-            processedIds.add(id);
-          }
-        }
-      })
-      if (componentStocks.length > 0) {
-        const invSetItem = inventory.find(i => i.id === setId);
-        if(invSetItem){
-          invSetItem.stock = Math.min(...componentStocks);
-          processedIds.add(setId);  
-        }
-      }
-
-      // その他の商品の購入処理
       items.forEach(item => {
-        if (!processedIds.has(item.id)) {
-          const invItem = inventory.find(i => i.id === item.id);
-          if (invItem) {
-            invItem.stock = Math.max(0, invItem.stock - item.qty);
-            processedIds.add(item.id);
-          }
+        const invItem = inventory.find(i => i.id === item.id);
+        if (invItem) {
+          invItem.stock = Math.max(0, invItem.stock - item.qty);
         }
       });
       localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory));
     }
 
-  </script>
+</script>
 </body>
 </html>
