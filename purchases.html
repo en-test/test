@@ -91,7 +91,7 @@
         }).join("");
         return `
           <div class="entry">
-            <strong>${d.ticket}　金額合計：¥${d.totalPrice}　応援カード枚数合計：${d.totalBonus}枚</strong>
+            <strong>金額合計：¥${d.totalPrice}　応援カード枚数合計：${d.totalBonus}枚</strong>
             <table>
               <thead><tr><th>商品</th><th>数量</th><th>単価</th><th>小計</th><th>応援カード</th></tr></thead>
               <tbody>${rows}</tbody>
@@ -103,10 +103,10 @@
     // CSV出力関数
     function exportCSV() {
       if (arr.length === 0) return alert("保存データはありません");
-      let csv = "チケット番号,商品名,価格,購入数,小計,応援カード枚数\n";
+      let csv = "商品名,価格,購入数,小計,応援カード枚数\n";
       arr.forEach(d => {
         d.items.forEach(i => {
-          csv += [d.ticket, i.name, i.price, i.qty, i.price * i.qty, i.bonus * i.qty].join(",") + "\n";
+          csv += [i.name, i.price, i.qty, i.price * i.qty, i.bonus * i.qty].join(",") + "\n";
         });
       });
       const blob = new Blob([csv], { type: "text/csv" });
