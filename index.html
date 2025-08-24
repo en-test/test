@@ -1,20 +1,31 @@
+
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>物販購入ページ</title>
+
+  <!-- QRコード生成ライブラリ: qrcodejs https://github.com/davidshimjs/qrcodejs Licensed under the MIT License -->
+  <script src="./library/qrcode.min.js"></script>
+  
   <style>
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: #f2f2f2;
       margin: 0;
       padding: 1rem;
-      color: #333;
+    }
+
+    h2 {
+      text-align: center
     }
 
     section {
-      max-width: 480px;
+      width: 100%;
+      max-width: 700px;
       margin: 1rem auto;
       background: #fff;
       padding: 1rem;
@@ -22,12 +33,13 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
-    h2, h3 {
+    h3 {
       text-align: center;
-      margin-bottom: 1rem;
+      border-bottom: 2px solid #447a95;
+      padding-bottom: 4px;
     }
 
-    .card-list {
+    #goods-cards {
       display: flex;
       flex-direction: column;
       gap: 1rem;
@@ -41,31 +53,42 @@
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
+    }
+
+    .item-title {
+      font-weight: bold;
+    }
+
+    .item-meta {
+      display: flex;
+      justify-content: space-between;
       font-size: 0.95rem;
     }
 
-    .card-item .item-title {
-      font-weight: bold;
-      font-size: 1rem;
-    }
-
-    .card-item .item-meta {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .card-item select {
+    select {
       margin-top: 0.5rem;
-      font-size: 1rem;
-      padding: 0.4rem;
+      font-size: 0.95rem;
+      padding: 0.3em 0.5em;
       width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    #select-summary, #confirm-summary, #qr-summary {
+      margin: 0.8rem 0.5rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    p {
+      margin: 0.3rem 0;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
-      font-size: 0.95rem;
     }
 
     th, td {
@@ -76,138 +99,130 @@
       white-space: nowrap;
     }
 
-    .item-name{
-      border: 1px solid #ccc;
-      padding: 0.4rem 0.3rem;
-      text-align: center;
-      font-size: 0.85rem;
-      white-space: normal;
+    th {
+      background: #f0f0f0;
+      color: #000;
     }
-
-    select {
-      width: 100%;
-      padding: 0.4rem;
-      font-size: 1rem;
-    }
-
-    #totals {
-      margin: 0.8rem 0;
+    
+    tfoot tr th {
       font-weight: bold;
-      text-align: right;
-      font-size: 1.1rem;
     }
 
     button {
       width: 100%;
-      padding: 0.8rem;
-      font-size: 1rem;
-      margin: 0.5rem 0;
-      background: #548fae;
+      background-color: #548fae;
       color: white;
       border: none;
       border-radius: 6px;
+      padding: 0.8rem;
+      margin: 0.5em 0;
       cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
     }
 
     button:hover {
-      background: #447a95;
+      background-color: #aac7df;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      background-color: #95bad8;
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    button:focus {
+      outline: 2px solid #88b0d1;
+      outline-offset: 2px;
     }
 
     #qrcode {
       display: flex;
       justify-content: center;
-      margin-top: 1.5rem;
-    }
-
-    p {
-      margin: 0.3rem 0;
-    }
-
-    @media (max-width: 400px) {
-      th, td {
-        font-size: 0.85rem;
-        padding: 0.3rem;
-      }
-
-      select {
-        font-size: 0.9rem;
-      }
-
-      button {
-        font-size: 0.95rem;
-      }
+      margin: 1.5rem;
     }
 
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <h2 id="event-title">（イベント名）<br>- 昼の部 -</h2>
 
-  <section id="page1">
-    <h3>商品選択・数量入力</h3>
-    <div id="totals">合計金額: 0 円 / 応援カード: 0 枚</div>
-    <div id="goods-cards" class="card-list"></div>
+  <h2 id="event-title">画面共通タイトルはここ</h2>
+
+  <section id="pageSelect">
+    <h3>各画面タイトルはここ</h3>
+    <div id="goods-cards"></div>
+    <div id="select-summary"></div>
     <button onclick="toConfirm()">確認へ</button>
   </section>
 
   <section id="pageConfirm" style="display:none">
-    <h3>ご確認内容</h3>
+    <h3>各画面タイトルはここ</h3>
+    <div id="confirm-list"></div>
     <div id="confirm-summary"></div>
     <button onclick="backToSelection()">戻る</button>
     <button onclick="toQR()">完了（QR表示）</button>
   </section>
 
   <section id="pageQR" style="display:none">
-    <h3>こちらをスタッフに提示してください</h3>
+    <h3>各画面タイトルはここ</h3>
     <div id="qrcode"></div>
+    <div id="qr-list"></div>
     <div id="qr-summary"></div>
     <button onclick="backToConfirm()">戻る</button>
   </section>
 
   <script>
 
-    const ALLOWED_SERIALS = ["abc123xyz"];
-
-    const GOODS = [
-      { id: 1,  name: "入場特典", price:0, bonus:3 },
-      { id: 2,  name: "商品1", price:2500, bonus:2 },
-      { id: 3,  name: "商品2", price:1500,  bonus:1 },
-      { id: 4,  name: "商品3", price:1000,  bonus:1 },
+    // 商品マスタ
+    const GOODS_MASTER = [
+      { id: 1,  name: "商品1", price:0, bonus:3 },
+      { id: 2,  name: "商品2", price:2500, bonus:2 },
+      { id: 3,  name: "商品3", price:1500,  bonus:1 },
+      { id: 4,  name: "商品4", price:1000,  bonus:1 },
       { id: 5,  name: "缶バッジA", price:400,  bonus:0 },
       { id: 6,  name: "缶バッジB", price:400,  bonus:0 },
       { id: 7,  name: "缶バッジC", price:400,  bonus:0 },
       { id: 8,  name: "缶バッジD", price:400,  bonus:0 },
       { id: 9,  name: "缶バッジE", price:400,  bonus:0 },
-      { id:10, name: "商品9", price:400,  bonus:0 },
-      { id:11, name: "商品10", price:800, bonus:1 },
-      { id:12, name: "商品11", price:2200, bonus:3 },
-      { id:13, name: "商品12", price:2200, bonus:3 },
-      { id:14, name: "商品13", price:3500, bonus:5 },
-      { id:15, name: "商品14", price:300,  bonus:0 },
-      { id:16, name: "商品15", price:400,  bonus:0 }
+      { id:10, name: "商品10", price:400,  bonus:0 },
+      { id:11, name: "商品11", price:800, bonus:1 },
+      { id:12, name: "商品12", price:2200, bonus:3 },
+      { id:13, name: "商品13", price:2200, bonus:3 },
+      { id:14, name: "商品14", price:3500, bonus:5 },
+      { id:15, name: "商品15", price:300,  bonus:0 },
+      { id:16, name: "商品16", price:400,  bonus:0 }
     ];
 
-    let serial = "", stateGoods = [];
+    // 購入点数ごとに応援カードを付与する商品
+    const BONUS_ITEM_IDS = [
+      5,6,7,8,9
+    ]
 
-    function init() {
-      const params = new URLSearchParams(location.search);
-      const serial = params.get("serial");
-      const ALLOWED_SERIALS = ["abc123xyz"];
-      if (!serial || !ALLOWED_SERIALS.includes(serial)) {
-        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>無効なアクセスです。</h2>";
-        return;
-      }
-      document.getElementById("event-title").innerHTML = `（イベント名）<br>- 昼の部 -`;
-      stateGoods = GOODS.map(g => ({ ...g, qty: g.id === 1 ? 1 : 0 }));
-      const container = document.getElementById("goods-cards");
-      container.innerHTML = stateGoods.map(g => {
-        let options = '';
-        for (let i = 0; i <= 10; i++) {
-          const selected = g.qty === i ? 'selected' : '';
-          options += `<option value="${i}" ${selected}>${i}</option>`;
-        }
-        const disabled = g.id === 1 ? 'disabled' : '';
+    // 共通変数
+    let selectItems = [];
+    let totalPrice = 0;
+    let totalBonus = 0;
+    let countForBonus = 0;
+    let setBonus = 0;
+    let finalBonus = 0;
+
+    // 画面ロード時、選択画面処理を呼び出す
+    window.onload = select();
+
+    // 選択画面処理
+    function select() {
+
+      selectItems = GOODS_MASTER.map(g => ({ ...g, qty: 0 }));
+      const goodsCards = document.getElementById("goods-cards");
+      const selectSummary = document.getElementById("select-summary");
+
+      goodsCards.innerHTML = selectItems.map(g => {
+        const options = Array.from({ length: 51 }, (_, i) =>
+          `<option value="${i}" ${i === 0 ? "selected" : ""}>${i}</option>`
+        ).join("");
         return `
           <div class="card-item">
             <div class="item-title">${g.name}</div>
@@ -215,84 +230,172 @@
               <span>価格: ￥${g.price}</span>
               <span>応援カード: ${g.bonus}枚</span>
             </div>
-            <select data-id="${g.id}" onchange="onQty(this)" ${disabled}>${options}</select>
+            <select data-id="${g.id}" class="select-option">${options}</select>
           </div>`;
-      }).join("");
-      updateTotals();
+      }).join("");      
+      
+      selectSummary.innerHTML = `
+        <p>合計金額　　¥ ${totalPrice}</p>
+        <p>応援カード　${finalBonus} 枚</p>
+      `;
+
+      // 数量選択時
+      const qtySelects = document.querySelectorAll('select[data-id]');
+      qtySelects.forEach(select => {
+        select.addEventListener("change", () => {
+          // 選択値を設定
+          const id = parseInt(select.dataset.id);
+          const newQty = parseInt(select.value) || 0;
+          const item = selectItems.find(g => g.id === id);
+          if (item) item.qty = newQty;
+
+          // 合計値を再計算
+          totalQty = selectItems.reduce((sum, g) => sum + g.qty, 0);
+          totalPrice = selectItems.reduce((sum, g) => sum + g.price * g.qty, 0);
+          totalBonus = selectItems.reduce((sum, g) => sum + g.bonus * g.qty, 0);
+
+          countForBonus = selectItems
+            .filter(item => BONUS_ITEM_IDS.includes(item.id))
+            .reduce((sum, item) => sum + item.qty, 0);
+          setBonus = Math.floor(countForBonus / 5);
+          finalBonus = totalBonus + setBonus
+
+          selectSummary.innerHTML = `
+            <p>合計金額　　¥ ${totalPrice}</p>
+            <p>応援カード　${finalBonus} 枚</p>
+          `;
+        });
+      });
     }
 
-    function onQty(el) {
-      const id = +el.dataset.id, qty = Math.max(0, +el.value || 0);
-      const obj = stateGoods.find(g => g.id === id);
-      if (obj) obj.qty = qty;
-      updateTotals();
-    }
-
-    function updateTotals() {
-      const totalPrice = stateGoods.reduce((s, g) => s + g.price * g.qty, 0);
-      const totalBonus = stateGoods.reduce((s, g) => s + g.bonus * g.qty, 0);
-      document.getElementById("totals").innerText = 
-        `合計金額：${totalPrice} 円 / 応援カード：${totalBonus} 枚`;
-    }
-
+    // 確認画面遷移処理
     function toConfirm() {
-      const purchased = stateGoods.filter(g => g.qty > 0);
-      if (!purchased.length) {
+
+      // 購入リストを取得
+      const purchaseItems = selectItems.filter(g => g.qty > 0);
+      
+      // 購入リストが0件の場合、メッセージを表示する
+      if (!purchaseItems.length) {
         alert("購入する数量を入力してください");
         return;
       }
-      let html = `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
-      purchased.forEach(g => {
-        html += `<tr><td class="item-name">${g.name}</td><td>${g.qty}</td><td>￥${g.price * g.qty}</td><td>${g.bonus * g.qty}</td></tr>`;
-      });
-      html += `</tbody></table>
-               <p style="margin-top: 1rem; font-weight: bold; font-size: 1.1rem;">金額合計：${purchased.reduce((s,g)=>s+g.price*g.qty,0)} 円</p>
-               <p style="font-weight: bold; font-size: 1.1rem;">応援カード合計：${purchased.reduce((s,g)=>s+g.bonus*g.qty,0)} 枚</p>`;
-      document.getElementById("confirm-summary").innerHTML = html;
-      document.getElementById("page1").style.display = "none";
+
+      // 画面表示内容を設定
+      const rows = purchaseItems.map(item => {
+        return `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>￥${item.price * item.qty}</td>
+            <td>${item.bonus * item.qty}枚</td>
+          </tr>`;
+      }).join("");
+      
+      document.getElementById("confirm-list").innerHTML = `
+        <table>
+          <thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>応援カード</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <th>合計</th>
+              <th>${totalQty}点</th>
+              <th>￥${totalPrice}</th>
+              <th>${totalBonus}枚</th>
+            </tr>
+          </tfoot>
+        </table>
+        <table>
+          <tfoot>
+            <tr>
+              <th>缶バッジ購入点数</th>
+              <td>${countForBonus}点</td>
+              <th>追加応援カード枚数</th>
+              <td>${setBonus}枚</td>
+            </tr>
+          </tfoot>
+        </table>
+      `
+      document.getElementById("confirm-summary").innerHTML = `
+        <p>合計金額　　¥ ${totalPrice}</p>
+        <p>応援カード　${finalBonus} 枚</p>
+      `
+
+      // 画面切り替え
+      document.getElementById("pageSelect").style.display = "none";
       document.getElementById("pageConfirm").style.display = "block";
     }
 
+    // 確認画面→選択画面
     function backToSelection() {
-      document.getElementById("page1").style.display = "block";
+      document.getElementById("pageSelect").style.display = "block";
       document.getElementById("pageConfirm").style.display = "none";
       document.getElementById("pageQR").style.display = "none";
     }
 
+    // QR表示画面遷移処理
     function toQR() {
-      document.getElementById("pageConfirm").style.display = "none";
-      document.getElementById("pageQR").style.display = "block";
-      const purchased = stateGoods.filter(g => g.qty > 0).map(g => ({ id: g.id, qty: g.qty }));
+
+      // 購入リストを取得（JSONに埋め込む形式に変換）
+      const purchaseItems = selectItems.filter(g => g.qty > 0);
+      const purchaseItemsForQR = purchaseItems.map(g => ({ id: g.id, qty: g.qty }));
 
       // QRコードの生成
       const qrDiv = document.getElementById("qrcode");
       qrDiv.innerHTML = "";
-      new QRCode(qrDiv, { text: JSON.stringify(purchased), width: 256, height: 256 });
+      new QRCode(qrDiv, { text: JSON.stringify(purchaseItemsForQR), width: 256, height: 256 });
 
-      // 画面表示用のテーブルを作成
-      const totalPrice = purchased.reduce((s, g) => {
-        const obj = GOODS.find(x => x.id === g.id); return s + obj.price * g.qty;
-      }, 0);
-      const totalBonus = purchased.reduce((s, g) => {
-        const obj = GOODS.find(x => x.id === g.id); return s + obj.bonus * g.qty;
-      }, 0);
-      let summaryHtml = `<table><thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>カード</th></tr></thead><tbody>`;
-      purchased.forEach(g => {
-        const item = GOODS.find(x => x.id === g.id);
-        summaryHtml += `<tr><td class="item-name">${item.name}</td><td>${g.qty}</td><td>￥${item.price * g.qty}</td><td>${item.bonus * g.qty}</td></tr>`;
-      });
-      summaryHtml += `<tfoot><tr><th colspan="2">合計</th><th>￥${totalPrice}</th><th>${totalBonus}</th></tr></tfoot></tbody></table>`;
+      // 画面表示内容を設定
+      const rows = purchaseItems.map(item => {
+        return `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>￥${item.price * item.qty}</td>
+            <td>${item.bonus * item.qty}枚</td>
+          </tr>`;
+      }).join("");
+      
+      document.getElementById("qr-list").innerHTML = `
+        <table>
+          <thead><tr><th>商品名</th><th>数量</th><th>小計</th><th>応援カード</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <th>合計</th>
+              <th>${totalQty}点</th>
+              <th>￥${totalPrice}</th>
+              <th>${totalBonus}枚</th>
+            </tr>
+          </tfoot>
+        </table>
+        <table>
+          <tfoot>
+            <tr>
+              <th>缶バッジ購入点数</th>
+              <td>${countForBonus}点</td>
+              <th>追加応援カード枚数</th>
+              <td>${setBonus}枚</td>
+            </tr>
+          </tfoot>
+        </table>
+      `
+      document.getElementById("qr-summary").innerHTML = `
+        <p>合計金額　　¥ ${totalPrice}</p>
+        <p>応援カード　${finalBonus} 枚</p>
+      `
 
-      document.getElementById("qr-summary").innerHTML = summaryHtml;
+      // 画面切り替え
+      document.getElementById("pageConfirm").style.display = "none";
+      document.getElementById("pageQR").style.display = "block";
     }
 
+    // QR表示画面→確認画面
     function backToConfirm(){
-      document.getElementById("page1").style.display = "none";
+      document.getElementById("pageSelect").style.display = "none";
       document.getElementById("pageConfirm").style.display = "block";
       document.getElementById("pageQR").style.display = "none";
     }
 
-    window.onload = init;
   </script>
 </body>
 </html>

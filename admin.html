@@ -130,7 +130,7 @@
     }
 
     .select-option{
-      padding: 0.3em 0.5em;
+      padding: 0.4em;
       font-size: 0.95em;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -162,7 +162,6 @@
   <div id="dual-section">
     <div id="scan-section" class="section">
       <button id="toggle-scan-btn" onclick="clickToggleScanBtn()">スキャン開始</button>
-      <button id="bonus-only-btn" onclick="clickBonusOnlyBtn()">入場特典のみ</button>
       <div id="reader"></div>
     </div>
     <div id="result-section" class="section">
@@ -216,6 +215,11 @@
       { id: 15, stock: 75 },
       { id: 16, stock: 85 }
     ];
+
+    // 購入点数ごとに応援カードを付与する商品
+    const BONUS_ITEM_IDS = [
+      5,6,7,8,9
+    ]
 
     ///
     /// 画面ロード時処理
@@ -314,30 +318,6 @@
     }
 
     ///
-    /// 購入特典のみボタン押下
-    ///
-    function clickBonusOnlyBtn() {
-      if (lastScannedData) {
-          if (confirm("保存されていない購入データがあります。保存しますか？")){
-            clickSaveBtn()
-          }
-        }
-      const m = GOODS_MASTER.find(g => g.id === 1) || {};
-      const items = [{
-        id: 1, 
-        qty: 1, 
-        name: m.name, 
-        price: m.price, 
-        bonus: m.bonus 
-      }];
-      const data = {
-        items: items
-      };
-      lastScannedData = data;
-      displayScanResult(data);
-    }
-
-    ///
     /// スキャン結果表示
     ///
     function displayScanResult(data) {
@@ -391,7 +371,7 @@
 
       // セット対象商品5個購入ごとに応援カードを1枚追加
       const countForBonus = data.items
-        .filter(item => item.id >= 5 && item.id <= 9)
+        .filter(item => BONUS_ITEM_IDS.includes(item.id))
         .reduce((sum, item) => sum + item.qty, 0);
       const initSetBonus = Math.floor(countForBonus / 5);
       const initFinalBonus = initTotalBonus + initSetBonus
@@ -471,7 +451,7 @@
           });
 
           const countForBonus = data.items
-            .filter(item => item.id >= 5 && item.id <= 9)
+            .filter(item => BONUS_ITEM_IDS.includes(item.id))
             .reduce((sum, item) => sum + item.qty, 0);
           const newSetBonus = Math.floor(countForBonus / 5);
           const newFinalBonus = newTotalBonus + newSetBonus
